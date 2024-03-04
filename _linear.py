@@ -143,7 +143,8 @@ class LinearRegression(BaseEstimator):
 
         return pred
 
-    def get_inference(self, biased: bool = True) -> pd.DataFrame:
+    def get_inference(self, biased: bool = True,only_IC: bool =False,param_if_not_kept: np.ndarray = None,y_if_not_kept : np.ndarray=None,
+                      x_if_not_kept: np.ndarray=None) -> pd.DataFrame:
         """
         Function to calculate variance covariance matrix, significance levels for parameters, Information Criteria (IC)
 
@@ -151,6 +152,8 @@ class LinearRegression(BaseEstimator):
         ---------
         biased: bool -> Divide Sum of squared residuals by N (biased) or (N-p) (unbiased)
             where N is number of rows of X, p is number of columns of X
+        only_IC : bool -> If you want only to get Information criteria without inferencial statistics
+       param_if_not_kept : None|np.ndarray -> when it runs in a function, self is not kept, so introduce in a function parameter here
 
         Returns
         ------
@@ -187,13 +190,28 @@ class LinearRegression(BaseEstimator):
 
 
         """
-        erh.check_arguments_data((biased, bool))
+        if self.need_to_store_results:
+            parameter = self.params
+            y=self.y
+            x=self.x
+            if param_if_not_kept is not None or y_if_not_kept is not None or  x_if_not_kept is not None :
+                print("introduced param/y/x ignored, as we store results")
+        else:
+            parameter = param_if_not_kept
+            y=y_if_not_kept
+            x=super().add_intercept_f(x_if_not_kept)
+            if param_if_not_kept is None or y_if_not_kept is  None or x_if_not_kept is  None:
+                raise ValueError(
+                    "we dont store results, so you neeed to introduce param"
+                )
+        
+        erh.check_arguments_data((biased, bool),(only_IC,bool))
         # better to pass predictions to attributes
-        SCR = np.sum((self.y - (self.x @ self.params)) ** 2, axis=0)
-        N = self.x.shape[0]
-        p = self.x.shape[1]
+        SCR = np.sum((y - (x @ parameter)) ** 2, axis=0)
+        N = x.shape[0]
+        p = x.shape[1]
         variance = SCR / N if biased else SCR / (N - p)
-        self.variance_residuals = variance
+        
 
         LL = -0.5 * N * np.log(2 * np.pi * variance) - (SCR) / (2 * variance)
         AIC_ll = -2 * LL + 2 * (p)
@@ -207,16 +225,25 @@ class LinearRegression(BaseEstimator):
         criteria["BIC_ll"] = BIC_ll
         criteria["BIC_err"] = BIC_err
         criteria["AIC_err"] = AIC_err
-
-        self.criteria = criteria
+        
+        if only_IC:
+            return criteria
         # calculate variance covariance matrix and p values of parameters
-        vcov_matrix = variance * np.linalg.inv(self.x.T @ self.x)
-        self.vcov_matrix = vcov_matrix
+        vcov_matrix = variance * np.linalg.inv(x.T @ x)
+        
         std_params = np.sqrt(np.diagonal(vcov_matrix))
-        t_value = self.params / std_params
+        t_value = parameter/ std_params
         p_value = [(2 * t.sf(np.abs(el), df=N - p)) for el in t_value]
         result = pd.DataFrame(
             np.column_stack((self.params, std_params, t_value, np.round(p_value, 4))),
             columns=["params", "std", "t value", "p value"],
         )
+        
+        
+        if self.need_to_store_results:
+            self.criteria = criteria
+            self.variance_residuals = variance
+            self.vcov_matrix = vcov_matrix
+        
+        
         return result
