@@ -3,6 +3,8 @@ Data Generation Process
 
 """
 
+#Author : Artur Ayrapetyan
+
 import numpy as np
 from scipy.stats import multivariate_normal
 from scipy.stats import rankdata, norm
@@ -10,6 +12,18 @@ from scipy.linalg import cholesky
 
 
 def ImanConoverTransform(X, C):
+    
+    """
+    Performs the Iman-Conover transformation on the input data matrix X using the correlation matrix C.
+    This transformation generates outliers in the data based on the distribution of ranks of the original data.
+
+    Parameters:
+    - X: Input data matrix of shape (N, D), where N is the number of samples and D is the number of features.
+    - C: Correlation matrix of shape (D, D) representing the correlations between features.
+
+    Returns:
+    - W: Transformed data matrix of the same shape as X, with outliers generated.
+    """
     # used for outliers generation
     N = X.shape[0]
     S = np.ones_like(X)
@@ -35,6 +49,23 @@ def ImanConoverTransform(X, C):
 
 
 def gen(type=1):
+    """ 
+    Generates synthetic data based on different scenarios specified by the 'type' parameter.
+
+    Parameters:
+    - type: Integer specifying the scenario type for data generation. Options are:
+    - 1: Generates data with 50 features, where the first 5 features have linear relationships with a response variable.
+    - 2: Generates data with 50 features grouped into 5 blocks of strongly correlated features.
+    - 3: Generates data with 50 features, where the first 5 features have a specific correlation pattern.
+    - 4: Generates data with 50 features, where the first 5 features have undergone the Iman-Conover transformation.
+
+    Returns:
+    - x: Input data matrix of shape (N, D) based on the specified scenario.
+    - y: Response variable vector of shape (N,) corresponding to the generated data.
+
+    Note: The 'gen' function allows for generating different types of synthetic data for testing and analysis purposes.
+    """
+    
     if type == 1:
         # Define covariance matrix
         var_covar = np.eye(50)
