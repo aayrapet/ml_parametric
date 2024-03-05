@@ -1,3 +1,9 @@
+"""
+Variable Auto Selection using Information Criteria
+"""
+
+# Author: Artur Ayrapetyan
+
 import numpy as np
 
 import math as mt
