@@ -1,8 +1,24 @@
 import numpy as np
 from _linear import LinearRegression
-import math as mt 
+import math as mt
+from typing import Type
+from typing import Literal
+import _err_handl as erh
 
-def is_decrease(vector):
+
+def is_decrease(vector: list) -> bool:
+    """
+    This function is used for model selection using Information Criteria (IC)
+    For this, we will observe only two last values of the list. The selection algorithm will have 3 rules:
+
+    1.iF N-1 value > N value then continue the algorithm so the function will return True
+    2.if there is no values yet in the list, so we work with initialised vector so the function will return True to start accuulating IC
+    3.if the lenght of the function is 1 return True to get more IC for model comparison
+
+    once N-1 value<N value the function returns False, the algorithm stops -> we get our final model that minimses IC
+
+
+    """
     val = False
     if not vector:
         val = True
@@ -14,7 +30,15 @@ def is_decrease(vector):
     return val
 
 
-def delete_i_from_index(exclusion, vector):
+def delete_i_from_index(exclusion: int, vector: np.ndarray) -> np.ndarray:
+    """
+
+    Simple function just to exclude observation from numpy array
+    exclusion: digit to exclude
+    vector: exclude from this numpy array this digit
+
+
+    """
     new_index = []
     for i in range(len(vector)):
         if vector[i] != exclusion:
@@ -22,24 +46,66 @@ def delete_i_from_index(exclusion, vector):
     return new_index
 
 
-def forward_selection(Class_algorithm, x, y, criterion):
+def forward_selection(
+    Class_algorithm: Type,
+    x: np.ndarray,
+    y: np.ndarray,
+    criterion: Literal[
+        "BIC_ll",
+        "AIC_ll",
+        "AIC_err",
+        "BIC_err",
+        "LL",
+    ] = "BIC_ll",
+) -> np.ndarray:
+    """
+    Forward selection Algorithm
 
+    Starts with empty model and iteratively adds variables to the model whose IC is the least
+
+    Parameters
+    ------
+    Class_algorithm (class) : parametric model on which variable selection will be performed
+    x (array alike) : matrix of x variables
+    y (array alike) : vector of y
+    criterion (str) : Information criterion (IC) that is a stopping criterion that stops
+
+            For linear regression accepted are:
+                                 -BIC_ll |AIC_ll |AIC_err |BIC_err |LL
+            For logistic regression accepted are:
+                                 -BIC_ll |AIC_ll |LL because we cant calculate errors
+
+
+
+
+    """
+    # check that introduced variables are of good type
+    erh.check_arguments_data(
+        (Class_algorithm, "__class__"),
+        (x, np.ndarray),
+        (y, np.ndarray),
+        (criterion, str),
+    )
+    # make sure that during code excecution we dont store the process of this function
     Class_algorithm.need_to_store_results = False
+
     index = np.array([i for i in range(x.shape[1])])
 
-    min_aic = []
+    min_aic_global = []
     first_iteration = True
     final_index = np.zeros(0, dtype=int)
     index_found = 0
 
-    while is_decrease(min_aic):
+    while is_decrease(min_aic_global):
         if first_iteration:
             first_iteration = False
         else:
+            # delete from index respective variable
             index = delete_i_from_index(index_found, index)
+            # add to final index respective variable
             final_index = np.hstack((final_index, index_found))
-        start = float("inf")
 
+        min_aic = []
         for i in range(len(index)):
             new_index = np.hstack((final_index, index[i]))
 
@@ -51,30 +117,69 @@ def forward_selection(Class_algorithm, x, y, criterion):
                 x_if_not_kept=x[:, new_index],
             )
             this_criterion = criteria[criterion]
-
-            if start > this_criterion:
-                start = this_criterion.copy()
-                index_found = index[i]
-
-        min_aic.append(start)
+            min_aic.append(this_criterion)
+        # find position of minimal IC over these models
+        index_min = np.argmin(min_aic)
+        index_found = index[index_min]
+        # add minimal IC to the IC list, so that we can compare two last IC
+        min_aic_global.append(min(min_aic))
+    # set this parameter back to true so the user will be able to store results in attributes
     Class_algorithm.need_to_store_results = True
+
     return final_index
 
 
-def backward_selection(Class_algorithm, x, y, criterion):
+def backward_selection(
+    Class_algorithm: Type,
+    x: np.ndarray,
+    y: np.ndarray,
+    criterion: Literal[
+        "BIC_ll",
+        "AIC_ll",
+        "AIC_err",
+        "BIC_err",
+        "LL",
+    ] = "BIC_ll",
+) -> np.ndarray:
+    """
+    Backward selection Algorithm
+
+    Starts with full model and iteratively removes variables from the model whose IC is the least
+
+    Parameters
+    ------
+    Class_algorithm (class) : parametric model on which variable selection will be performed
+    x (array alike) : matrix of x variables
+    y (array alike) : vector of y
+    criterion (str) : Information criterion (IC) that is a stopping criterion that stops
+
+            For linear regression accepted are:
+                                 -BIC_ll |AIC_ll |AIC_err |BIC_err |LL
+            For logistic regression accepted are:
+                                 -BIC_ll |AIC_ll |LL because we cant calculate errors
+
+
+
+
+    """
+    # check that introduced variables are of good type
+    erh.check_arguments_data(
+        (Class_algorithm, "__class__"),
+        (x, np.ndarray),
+        (y, np.ndarray),
+        (criterion, str),
+    )
+    # make sure that during code excecution we dont store the process of this function
     Class_algorithm.need_to_store_results = False
     index = np.array([i for i in range(x.shape[1])])
 
-    min_aic = []
     first_iteration = True
 
     index_found = 0
 
-    # continue if aic continue decreasing or if the minimal aic is not the whole model
-    while is_decrease(min_aic):
+    while True:
         if first_iteration:
             first_iteration = 0
-
         else:
             index = delete_i_from_index(index_found, index)
 
@@ -85,7 +190,6 @@ def backward_selection(Class_algorithm, x, y, criterion):
             if first_time:
                 new_index = index.copy()
                 first_time = False
-
             else:
                 new_index = delete_i_from_index(index[i], index)
 
@@ -105,15 +209,65 @@ def backward_selection(Class_algorithm, x, y, criterion):
                 else:
                     index_found = index[i]
 
-        min_aic.append(start)
+        # the exit from the loop is guaranteed when index_found is "Full model is best"
         if isinstance(index_found, str):
             Class_algorithm.need_to_store_results = True
             return index
-    Class_algorithm.need_to_store_results = True
-    return index
 
 
-def stepwise_selection(Class_algorithm, x, y, criterion):
+def stepwise_selection(
+    Class_algorithm: Type,
+    x: np.ndarray,
+    y: np.ndarray,
+    criterion: Literal[
+        "BIC_ll",
+        "AIC_ll",
+        "AIC_err",
+        "BIC_err",
+        "LL",
+    ] = "BIC_ll",
+) -> np.ndarray:
+    """
+    Stepwise selection Algorithm
+
+    Starts with  model filled with 50% of variables selected randomly (inside vars),
+    other 50% are kept outside the model (outide vars).
+    
+    Tries to remove variables from inside vars doing backward regression 
+    on them-> calculates the min IC and respective inside var
+    
+    At the same time tries to add variables to inside vars doing forward regression
+    and calculates minimal IC and respective inside var.
+    
+    The alg will drop the variable if min IC backward < min IC forward and vice versa.
+    Very important: when the variable is removed, it does not leave the model forever, 
+    it will go outside vars so that we leave the possibility to this var to get back later.
+    
+    Parameters
+    ------
+    Class_algorithm (class) : parametric model on which variable selection will be performed
+    x (array alike) : matrix of x variables
+    y (array alike) : vector of y
+    criterion (str) : Information criterion (IC) that is a stopping criterion that stops
+
+            For linear regression accepted are:
+                                 -BIC_ll |AIC_ll |AIC_err |BIC_err |LL
+            For logistic regression accepted are:
+                                 -BIC_ll |AIC_ll |LL because we cant calculate errors
+
+
+
+
+    """
+    # check that introduced variables are of good type
+    erh.check_arguments_data(
+        (Class_algorithm, "__class__"),
+        (x, np.ndarray),
+        (y, np.ndarray),
+        (criterion, str),
+    )
+    # make sure that during code excecution we dont store the process of this function
+
     Class_algorithm.need_to_store_results = False
     v = np.random.permutation(x.shape[1])
     split_index = mt.floor(x.shape[1] / 2)
