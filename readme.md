@@ -1,34 +1,37 @@
-In this project I aim to develop using only math and numpy existing parametric models such as Linear Regression, Logistic Regression, Neural Networks (incoming). The project is organised in modules:
+# Machine Learning Project
 
--base -> module that stores Gradient Descent optimiser which is a classic Gradient Descent for Generalised Linear Models It has extensions such as stochastic gradient descent and newton raphson. Moreover, this module stores BaseEstimator which is the base estimator for GLM such as Linear Regression and Logistic Regression
+In this project, the aim is to develop parametric models using only math and NumPy. The project is organized into the following modules:
 
--linear -> module that stores Linear Regression model
+## Modules
 
--logistic -> module that stores Logistic Regression model
+- **base**: Contains the Gradient Descent optimizer, which includes classic Gradient Descent for Generalized Linear Models. It also has extensions such as stochastic gradient descent and Newton-Raphson. Additionally, this module stores `BaseEstimator`, which serves as the base estimator for GLM, such as Linear Regression and Logistic Regression.
 
--metrics -> module that stores metrics used for
+- **linear**: Stores the Linear Regression model.
 
-regression:
+- **logistic**: Stores the Logistic Regression model.
 
--mse 
--mae
+- **autoselect**: Stores the Autoselection of variables class. It selects variables using information Criteria defined by user. It has three oprions: backward, forward and stepwise regressions
 
-classification:
+- **metrics**: Stores various metrics used for:
 
--accuracy
--recall
--precision
--f1 
+  - Regression:
+    - Mean Squared Error (MSE)
+    - Mean Absolute Error (MAE)
+  - Classification:
+    - Accuracy
+    - Recall
+    - Precision
+    - F1 Score
+  - Others:
+    - Confusion Matrix
+    - Cross Validation
 
-others:
+- **err_handl**: Manages errors within the modules.
 
-confusion matrix
-Cross Validation 
+- **dgp**: Generates data with different characteristics used for linear regression.
 
--err_handl -> module that does error management in the modules
+- **data**: Example data for linear and logistic regressions.
 
--dgp -> module that generates data with different characteristics used for linear regression
+## Testing
 
--data -> example data for linear and logistic regressions
-
-All the work is tested and summarised in test notebook where these both models are excecuted, tested and evaluated
+All the work is thoroughly tested and summarized in the test notebook. This notebook executes, tests, and evaluates both models.
