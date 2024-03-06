@@ -42,6 +42,6 @@ All the work is thoroughly tested and summarized in the test notebook. This note
 
 ## Versions
 
-- Python Version: 3.8.5
+- Python Version: 3.11.4
 - Numpy Version : 1.26.4
 - Pandas Version : 2.2.1
