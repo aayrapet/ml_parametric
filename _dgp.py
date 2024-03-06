@@ -4,7 +4,7 @@ Data Generation Process
 """
 
 #Author : Artur Ayrapetyan
-
+from typing import Literal
 import numpy as np
 from scipy.stats import multivariate_normal
 from scipy.stats import rankdata, norm
@@ -50,7 +50,7 @@ def ImanConoverTransform(X, C):
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
 
-def gen(type=1,regression="linear"):
+def gen(type=1,regression: Literal["linear","logistic"]="linear"):
     if type == 1:
         # Define covariance matrix
         var_covar = np.eye(50)
