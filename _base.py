@@ -76,7 +76,8 @@ class GradientDescent:
 
     max_iteration : int
         The maximum number of iterations to perform during optimization.
-
+    print_message : bool
+        Print or not the message of convergence (recommended: True)
     """
 
     def __init__(
@@ -89,6 +90,7 @@ class GradientDescent:
         mini_batch_size,
         x,
         y,
+        print_message: bool = True
     ):
 
         self.regression = regression
@@ -101,6 +103,7 @@ class GradientDescent:
         self.newton_raphson = False
         self.change = float("inf")
         self.max_iteration = max_iteration
+        self.print_message=print_message
 
     def optimiser_update_parameter(self, B, x, y):
         """
@@ -199,14 +202,15 @@ class GradientDescent:
         if iteration < local_max_iter:
             if self.change < self.tol_level:
                 self.stop_loop = True
-                print(message_good)
+                
+                print(message_good) if self.print_message else None
         # on the final iteration
         elif iteration == local_max_iter:
             if self.change < self.tol_level:
                 self.stop_loop = True
-                print(message_good)
+                print(message_good) if self.print_message else None
             if self.change > self.tol_level:
-                print(message_bad)
+                print(message_bad) if self.print_message else None
 
     def optimiser_algorithm_classic(self):
         """
@@ -360,6 +364,7 @@ class BaseEstimator:
         max_iteration: int = 100,
         mini_batch_size: int = 32,
         need_to_store_results: bool = True,
+        print_message : bool = True
     ):
 
         # define mandatory field:
@@ -371,6 +376,7 @@ class BaseEstimator:
         self.max_iteration = max_iteration
         self.mini_batch_size = mini_batch_size
         self.need_to_store_results = need_to_store_results
+        self.print_message=print_message
         # define  fields that will be calculated after:
         self.predictions = "not calculated yet"
         self.params = "not calculated yet"
@@ -422,6 +428,7 @@ class BaseEstimator:
             self.mini_batch_size,
             x,
             y,
+            self.print_message
         )
         result_param = alg.optimiser_algorithm_classic()
         if self.need_to_store_results:
@@ -474,6 +481,7 @@ class BaseEstimator:
             "BIC_err",
             "LL",
         ] = "BIC_ll",
+        print_message: bool=True
     )->np.ndarray:
         
         """
@@ -495,6 +503,7 @@ class BaseEstimator:
             This method assumes that the model has already been fitted. It uses the provided method
             and criterion to perform automatic variable selection and returns the indices of the selected variables.
         """
+        self.print_message=print_message
         if self.x is None or self.y is None:
             raise ValueError("fit the model first, then do autoselect")
         if self.add_intercept:

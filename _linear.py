@@ -58,6 +58,7 @@ class LinearRegression(BaseEstimator):
         max_iteration: int = 100,
         mini_batch_size: int = 32,
         need_to_store_results: bool = True,
+        print_message : bool=True
     ):
 
         # only these solvers are allowed
@@ -82,6 +83,7 @@ class LinearRegression(BaseEstimator):
             max_iteration,
             mini_batch_size,
             need_to_store_results,
+            print_message
         )
 
     def fit(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
@@ -258,6 +260,7 @@ class LinearRegression(BaseEstimator):
             "BIC_err",
             "LL",
         ] = "BIC_ll",
+        print_message: bool=True
     )->np.ndarray:
         
         """
@@ -280,6 +283,6 @@ class LinearRegression(BaseEstimator):
             and criterion to perform automatic variable selection and returns the indices of the selected variables.
         """
 
-        result=super().autoselection(method,criterion)
+        result=super().autoselection(method,criterion,print_message)
         return result
 

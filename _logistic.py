@@ -328,10 +328,10 @@ class LogisticRegression(BaseEstimator):
         criterion: Literal[
             "BIC_ll",
             "AIC_ll",
-            "AIC_err",
-            "BIC_err",
+          
             "LL",
         ] = "BIC_ll",
+        print_message: bool=True
     )->np.ndarray:
         
         """
@@ -354,5 +354,5 @@ class LogisticRegression(BaseEstimator):
             and criterion to perform automatic variable selection and returns the indices of the selected variables.
         """
 
-        result=super().autoselection(method,criterion)
+        result=super().autoselection(method,criterion,print_message)
         return result
