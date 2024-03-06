@@ -33,8 +33,10 @@ def ImanConoverTransform(X, C):
 
     return W
 
+def sigmoid(x):
+    return 1 / (1 + np.exp(-x))
 
-def gen(type=1):
+def gen(type=1,regression="linear"):
     if type == 1:
         # Define covariance matrix
         var_covar = np.eye(50)
@@ -50,11 +52,21 @@ def gen(type=1):
         # Generate random normal variables
         x = np.random.multivariate_normal(mean.flatten(), var_covar, 500)
 
-        # Generate epsilon values
-        eps = np.random.normal(loc=0, scale=0.1, size=x.shape[0])
+        if regression=="linear":
+                # Generate epsilon values
+                eps = np.random.normal(loc=0, scale=0.1, size=x.shape[0])
 
-        # Create Y variable
-        y = (x[:, :5] @ beta.T) + eps
+                # Create Y variable
+                y = (x[:, :5] @ beta.T) + eps
+                
+        elif regression=="logistic":
+               y_lin = (x[:, :5] @ beta.T) # + eps
+               p_true = sigmoid(y_lin)
+               y = np.random.binomial(1, p_true, size=500)
+                       
+           
+        
+        
     elif type == 2:
         var_covar1 = np.full((10, 10), 0.9)  # X1 to X10 strongly correlated: 0.9
         var_covar2 = np.full((10, 10), 0.8)  # X11 to X20
@@ -90,8 +102,17 @@ def gen(type=1):
         )  # Generate 500 observations for X41 to X50 with correlation of 0.5
 
         x = np.concatenate((X1, X2, X3, X4, X5), axis=1)
-        eps = np.random.normal(0, 0.1, size=x.shape[0])
-        y = (x[:, :5] @ beta) + eps
+        if regression=="linear":
+                # Generate epsilon values
+                eps = np.random.normal(loc=0, scale=0.1, size=x.shape[0])
+
+                # Create Y variable
+                y = (x[:, :5] @ beta.T) + eps
+                
+        elif regression=="logistic":
+               y_lin = (x[:, :5] @ beta.T) # + eps
+               p_true = sigmoid(y_lin)
+               y = np.random.binomial(1, p_true, size=500)
 
     elif type == 3:
 
@@ -115,9 +136,17 @@ def gen(type=1):
 
         x = np.concatenate((X_corr, X_indep), axis=1)
 
-        eps = np.random.normal(loc=0, scale=0.1, size=x.shape[0])
+        if regression=="linear":
+                # Generate epsilon values
+                eps = np.random.normal(loc=0, scale=0.1, size=x.shape[0])
 
-        y = np.dot(x[:, :5], beta) + eps
+                # Create Y variable
+                y = (x[:, :5] @ beta.T) + eps
+                
+        elif regression=="logistic":
+               y_lin = (x[:, :5] @ beta.T) # + eps
+               p_true = sigmoid(y_lin)
+               y = np.random.binomial(1, p_true, size=500)
     elif type == 4:
         N = 500
         mu1 = np.zeros(50)
@@ -155,6 +184,15 @@ def gen(type=1):
         x = np.concatenate((W, M), axis=1)
 
         beta = np.array([2.5, 1.3, 0.5, -0.5, -3.4])
-        eps = np.random.normal(size=N) * 0.1
-        y = np.dot(x[:, :5], beta) + eps
+        if regression=="linear":
+                # Generate epsilon values
+                eps = np.random.normal(loc=0, scale=0.1, size=x.shape[0])
+
+                # Create Y variable
+                y = (x[:, :5] @ beta.T) + eps
+                
+        elif regression=="logistic":
+               y_lin = (x[:, :5] @ beta.T) # + eps
+               p_true = sigmoid(y_lin)
+               y = np.random.binomial(1, p_true, size=500)
     return x, y
