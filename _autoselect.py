@@ -163,25 +163,31 @@ class AutoSelect:
                 final_index = np.hstack((final_index, index_found))
 
             min_aic = []
-            for i in range(len(index)):
-                new_index = np.hstack((final_index, index[i]))
-                #run model on selected set of variables
-                parameter = self.Class_algorithm.fit(x[:, new_index], y)
-                criteria = self.Class_algorithm.get_inference(
-                    #only calculate IC
-                    only_IC=True,
-                    #as we dont store parameters/x/y, introduce them in arguments!!
-                    param_if_not_kept=parameter,
-                    y_if_not_kept=y,
-                    x_if_not_kept=x[:, new_index],
-                )
-                this_criterion = criteria[self.inf_criterion]
-                min_aic.append(this_criterion)
-            # find position of minimal IC over these models
-            index_min = np.argmin(min_aic)
-            index_found = index[index_min]
-            # add minimal IC to the IC list, so that we can compare two last IC
-            min_aic_global.append(min(min_aic))
+            if len(index)!=0:
+                for i in range(len(index)):
+                    new_index = np.hstack((final_index, index[i]))
+                    
+                    #run model on selected set of variables
+                    parameter = self.Class_algorithm.fit(x[:, new_index], y)
+                    criteria = self.Class_algorithm.get_inference(
+                        #only calculate IC
+                        only_IC=True,
+                        #as we dont store parameters/x/y, introduce them in arguments!!
+                        param_if_not_kept=parameter,
+                        y_if_not_kept=y,
+                        x_if_not_kept=x[:, new_index],
+                    )
+                    this_criterion = criteria[self.inf_criterion]
+                    min_aic.append(this_criterion)
+                # find position of minimal IC over these models
+                
+                index_min = np.argmin(min_aic)
+                index_found = index[index_min]
+                # add minimal IC to the IC list, so that we can compare two last IC
+                min_aic_global.append(min(min_aic))  
+            else:
+               break
+              
         # set this parameter back to true so the user will be able to store results in attributes
         self.Class_algorithm.need_to_store_results = True
 

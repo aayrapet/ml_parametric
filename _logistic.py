@@ -238,7 +238,13 @@ class LogisticRegression(BaseEstimator):
 
         return prediction
 
-    def get_inference(self):
+    def get_inference(
+        self,
+        only_IC: bool = False,
+        param_if_not_kept: np.ndarray = None,
+        y_if_not_kept: np.ndarray = None,
+        x_if_not_kept: np.ndarray = None,
+    ) -> pd.DataFrame:
         """
         Calculates inference statistics and parameter estimates.
 
@@ -257,16 +263,29 @@ class LogisticRegression(BaseEstimator):
         if self.multiclass in ["ovr", "softmax"]:
             raise ValueError("no done yet, incoming")
 
-        if isinstance(self.proba, str):
-            raise ValueError("run .predict() first")
-        N = self.x.shape[0]
-        p = self.x.shape[1]
+        
+        
+        if self.need_to_store_results:
+            parameter = self.params
+            y=self.y
+            x=self.x
+            if param_if_not_kept is not None or y_if_not_kept is not None or  x_if_not_kept is not None :
+                print("introduced param/y/x ignored, as we store results")
+        else:
+            parameter = param_if_not_kept
+            y=y_if_not_kept
+            x=super().add_intercept_f(x_if_not_kept)
+            if param_if_not_kept is None or y_if_not_kept is  None or x_if_not_kept is  None:
+                raise ValueError(
+                    "we dont store results, so you neeed to introduce param"
+                )
+     
+        N = x.shape[0]
+        p = x.shape[1]
 
-        w = self.proba * (1 - self.proba)
-        Wdiag = np.diag(w)
-        std_params = np.sqrt(np.diag(np.linalg.inv(self.x.T @ Wdiag @ self.x)))
-        LL = self.y.T @ self.x @ self.params - np.sum(
-            np.log(1 + np.exp(self.x @ self.params))
+        
+        LL = y.T @ x @ parameter- np.sum(
+            np.log(1 + np.exp(x @ parameter))
         )
 
         AIC_ll = -2 * LL + 2 * (p)
@@ -276,8 +295,22 @@ class LogisticRegression(BaseEstimator):
         criteria["LL"] = LL
         criteria["AIC_ll"] = AIC_ll
         criteria["BIC_ll"] = BIC_ll
-
-        self.criteria = criteria
+        
+        if only_IC:
+            return criteria
+        
+        #another part that does not need to have introduced to arguments parameters
+        
+        
+        if isinstance(self.proba, str):
+            raise ValueError("run .predict() first")
+        
+        
+        w = self.proba * (1 - self.proba)
+        Wdiag = np.diag(w)
+        std_params = np.sqrt(np.diag(np.linalg.inv(x.T @ Wdiag @ x)))
+        if self.need_to_store_results:
+            self.criteria = criteria
         # calculate variance covariance matrix and p values of parameters
 
         t_value = self.params / std_params
@@ -286,4 +319,40 @@ class LogisticRegression(BaseEstimator):
             np.column_stack((self.params, std_params, t_value, np.round(p_value, 4))),
             columns=["params", "std", "t value", "p value"],
         )
+        return result
+    
+    
+    def autoselection(
+        self,
+        method: Literal["backward", "forward", "stepwise"],
+        criterion: Literal[
+            "BIC_ll",
+            "AIC_ll",
+            "AIC_err",
+            "BIC_err",
+            "LL",
+        ] = "BIC_ll",
+    )->np.ndarray:
+        
+        """
+        Perform automatic variable selection for the model.
+    
+        Parameters:
+            method (str): The method to use for variable selection. It can be one of: "backward", "forward", or "stepwise".
+            criterion (str, optional): The criterion to use for variable selection.
+                Options include: "BIC_ll", "AIC_ll", "AIC_err", "BIC_err", or "LL".
+                Defaults to "BIC_ll".
+    
+        Returns:
+            np.ndarray: An array containing the indices of the selected variables.
+    
+        Raises:
+            ValueError: If the model has not been fitted (i.e., if `x` or `y` is None).
+    
+        Note:
+            This method assumes that the model has already been fitted. It uses the provided method
+            and criterion to perform automatic variable selection and returns the indices of the selected variables.
+        """
+
+        result=super().autoselection(method,criterion)
         return result
