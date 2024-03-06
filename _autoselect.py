@@ -6,6 +6,7 @@ from typing import Literal
 import _err_handl as erh
 
 
+
 class AutoSelect:
     def __init__(
         self,
@@ -56,6 +57,15 @@ class AutoSelect:
         """
         #check that data types are good 
         erh.check_arguments_data((Class_algorithm,"__class__"),(method,str),(inf_criterion,str))
+        
+        
+        if method not in ["backward", "forward", "stepwise"]:
+            raise ValueError("no known methods detected")
+        if inf_criterion not in [ "BIC_ll",  "AIC_ll", "AIC_err","BIC_err","LL"]:
+            raise ValueError("no known criteria detected")
+        # if isinstance(Class_algorithm,LogisticRegression) and inf_criterion in ["AIC_err","BIC_err"]:
+        #     raise ValueError("for Logistic regression, IC can't be calculated using errors")
+        
         self.Class_algorithm=Class_algorithm
         self.method = method
         self.inf_criterion = inf_criterion
@@ -102,7 +112,11 @@ class AutoSelect:
                 new_index.append(vector[i])
         return new_index
 
-    def forward_selection(self,
+
+  
+    
+    def forward_selection( self,
+       
         x: np.ndarray,
         y: np.ndarray,
         
@@ -128,13 +142,7 @@ class AutoSelect:
 
 
         """
-        # check that introduced variables are of good type
-        erh.check_arguments_data(
-           
-            (x, np.ndarray),
-            (y, np.ndarray),
-         
-        )
+        #turn of storing results 
         self.Class_algorithm.need_to_store_results=False
        
 
@@ -181,8 +189,10 @@ class AutoSelect:
 
     def backward_selection(
         self,
+       
         x: np.ndarray,
         y: np.ndarray,
+        
        
     ) -> np.ndarray:
         """
@@ -206,13 +216,7 @@ class AutoSelect:
 
 
         """
-        # check that introduced variables are of good type
-        erh.check_arguments_data(
-           
-            (x, np.ndarray),
-            (y, np.ndarray),
-          
-        )
+       
         # make sure that during code excecution we dont store the process of this function
         self.Class_algorithm.need_to_store_results = False
         index = np.array([i for i in range(x.shape[1])])
@@ -258,7 +262,7 @@ class AutoSelect:
             # the exit from the loop is guaranteed when index_found is "Full model is best"
             if isinstance(index_found, str):
                 self.Class_algorithm.need_to_store_results = True
-                return index
+                return np.array(index)
 
     def stepwise_selection(
         self,
@@ -299,13 +303,7 @@ class AutoSelect:
 
 
         """
-        # check that introduced variables are of good type
-        erh.check_arguments_data(
-           
-            (x, np.ndarray),
-            (y, np.ndarray),
-          
-        )
+       
         # make sure that during code excecution we dont store the process of this function
 
         self.Class_algorithm.need_to_store_results = False
@@ -405,4 +403,42 @@ class AutoSelect:
                 min_aic.append(min_add_criterion)
 
         self.Class_algorithm.need_to_store_results = True
-        return index
+        return np.array(index)
+    
+    def fit(self,x: np.ndarray, y: np.ndarray)->np.ndarray:
+        
+        """  
+        Fit Backward/Forward/Stepwise regressions
+        
+        Parameters
+        -----
+        
+        x (array_like) : maxtrix x 
+        
+        y (array_like) : vector of target y variable
+        
+        
+        Returns
+        ------
+        
+        Array of indexes of x matrix
+        
+        """
+         # check that introduced variables are of good type
+        erh.check_arguments_data(
+           
+            (x, np.ndarray),
+            (y, np.ndarray),
+          
+        )
+        
+        if self.method=="backward":
+            res=self.backward_selection(x,y)
+        elif self.method=="forward":
+            res=self.forward_selection(x,y)
+        elif self.method=="stepwise":
+            res=self.stepwise_selection(x,y)
+        return res
+            
+    
+    
