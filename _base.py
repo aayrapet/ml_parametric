@@ -4,7 +4,7 @@ Generalized Linear Models
 
 # Author: Artur Ayrapetyan
 
-
+from _autoselect import AutoSelect
 import pandas as pd
 import _err_handl as erh
 import numpy as np
@@ -463,3 +463,43 @@ class BaseEstimator:
         pred = x @ parameter
 
         return pred
+
+    def autoselection(
+        self,
+        method: Literal["backward", "forward", "stepwise"],
+        criterion: Literal[
+            "BIC_ll",
+            "AIC_ll",
+            "AIC_err",
+            "BIC_err",
+            "LL",
+        ] = "BIC_ll",
+    )->np.ndarray:
+        
+        """
+        Perform automatic variable selection for the model.
+    
+        Parameters:
+            method (str): The method to use for variable selection. It can be one of: "backward", "forward", or "stepwise".
+            criterion (str, optional): The criterion to use for variable selection.
+                Options include: "BIC_ll", "AIC_ll", "AIC_err", "BIC_err", or "LL".
+                Defaults to "BIC_ll".
+    
+        Returns:
+            np.ndarray: An array containing the indices of the selected variables.
+    
+        Raises:
+            ValueError: If the model has not been fitted (i.e., if `x` or `y` is None).
+    
+        Note:
+            This method assumes that the model has already been fitted. It uses the provided method
+            and criterion to perform automatic variable selection and returns the indices of the selected variables.
+        """
+        if self.x is None or self.y is None:
+            raise ValueError("fit the model first, then do autoselect")
+        if self.add_intercept:
+            x=self.x[:,1:]
+            
+        sel = AutoSelect(self, method, criterion)
+        index_selected_variables=sel.fit(x, self.y)
+        return index_selected_variables

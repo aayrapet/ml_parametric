@@ -12,6 +12,7 @@ from typing import Literal
 import _err_handl as erh
 
 
+
 class AutoSelect:
     def __init__(
         self,
@@ -62,6 +63,15 @@ class AutoSelect:
         """
         #check that data types are good 
         erh.check_arguments_data((Class_algorithm,"__class__"),(method,str),(inf_criterion,str))
+        
+        
+        if method not in ["backward", "forward", "stepwise"]:
+            raise ValueError("no known methods detected")
+        if inf_criterion not in [ "BIC_ll",  "AIC_ll", "AIC_err","BIC_err","LL"]:
+            raise ValueError("no known criteria detected")
+        # if isinstance(Class_algorithm,LogisticRegression) and inf_criterion in ["AIC_err","BIC_err"]:
+        #     raise ValueError("for Logistic regression, IC can't be calculated using errors")
+        
         self.Class_algorithm=Class_algorithm
         self.method = method
         self.inf_criterion = inf_criterion
@@ -108,7 +118,11 @@ class AutoSelect:
                 new_index.append(vector[i])
         return new_index
 
-    def forward_selection(self,
+
+  
+    
+    def forward_selection( self,
+       
         x: np.ndarray,
         y: np.ndarray,
         
@@ -134,13 +148,7 @@ class AutoSelect:
 
 
         """
-        # check that introduced variables are of good type
-        erh.check_arguments_data(
-           
-            (x, np.ndarray),
-            (y, np.ndarray),
-         
-        )
+        #turn of storing results 
         self.Class_algorithm.need_to_store_results=False
        
 
@@ -161,25 +169,31 @@ class AutoSelect:
                 final_index = np.hstack((final_index, index_found))
 
             min_aic = []
-            for i in range(len(index)):
-                new_index = np.hstack((final_index, index[i]))
-                #run model on selected set of variables
-                parameter = self.Class_algorithm.fit(x[:, new_index], y)
-                criteria = self.Class_algorithm.get_inference(
-                    #only calculate IC
-                    only_IC=True,
-                    #as we dont store parameters/x/y, introduce them in arguments!!
-                    param_if_not_kept=parameter,
-                    y_if_not_kept=y,
-                    x_if_not_kept=x[:, new_index],
-                )
-                this_criterion = criteria[self.inf_criterion]
-                min_aic.append(this_criterion)
-            # find position of minimal IC over these models
-            index_min = np.argmin(min_aic)
-            index_found = index[index_min]
-            # add minimal IC to the IC list, so that we can compare two last IC
-            min_aic_global.append(min(min_aic))
+            if len(index)!=0:
+                for i in range(len(index)):
+                    new_index = np.hstack((final_index, index[i]))
+                    
+                    #run model on selected set of variables
+                    parameter = self.Class_algorithm.fit(x[:, new_index], y)
+                    criteria = self.Class_algorithm.get_inference(
+                        #only calculate IC
+                        only_IC=True,
+                        #as we dont store parameters/x/y, introduce them in arguments!!
+                        param_if_not_kept=parameter,
+                        y_if_not_kept=y,
+                        x_if_not_kept=x[:, new_index],
+                    )
+                    this_criterion = criteria[self.inf_criterion]
+                    min_aic.append(this_criterion)
+                # find position of minimal IC over these models
+                
+                index_min = np.argmin(min_aic)
+                index_found = index[index_min]
+                # add minimal IC to the IC list, so that we can compare two last IC
+                min_aic_global.append(min(min_aic))  
+            else:
+               break
+              
         # set this parameter back to true so the user will be able to store results in attributes
         self.Class_algorithm.need_to_store_results = True
 
@@ -187,8 +201,10 @@ class AutoSelect:
 
     def backward_selection(
         self,
+       
         x: np.ndarray,
         y: np.ndarray,
+        
        
     ) -> np.ndarray:
         """
@@ -212,13 +228,7 @@ class AutoSelect:
 
 
         """
-        # check that introduced variables are of good type
-        erh.check_arguments_data(
-           
-            (x, np.ndarray),
-            (y, np.ndarray),
-          
-        )
+       
         # make sure that during code excecution we dont store the process of this function
         self.Class_algorithm.need_to_store_results = False
         index = np.array([i for i in range(x.shape[1])])
@@ -264,7 +274,7 @@ class AutoSelect:
             # the exit from the loop is guaranteed when index_found is "Full model is best"
             if isinstance(index_found, str):
                 self.Class_algorithm.need_to_store_results = True
-                return index
+                return np.array(index)
 
     def stepwise_selection(
         self,
@@ -305,13 +315,7 @@ class AutoSelect:
 
 
         """
-        # check that introduced variables are of good type
-        erh.check_arguments_data(
-           
-            (x, np.ndarray),
-            (y, np.ndarray),
-          
-        )
+       
         # make sure that during code excecution we dont store the process of this function
 
         self.Class_algorithm.need_to_store_results = False
@@ -411,4 +415,42 @@ class AutoSelect:
                 min_aic.append(min_add_criterion)
 
         self.Class_algorithm.need_to_store_results = True
-        return index
+        return np.array(index)
+    
+    def fit(self,x: np.ndarray, y: np.ndarray)->np.ndarray:
+        
+        """  
+        Fit Backward/Forward/Stepwise regressions
+        
+        Parameters
+        -----
+        
+        x (array_like) : maxtrix x 
+        
+        y (array_like) : vector of target y variable
+        
+        
+        Returns
+        ------
+        
+        Array of indexes of x matrix
+        
+        """
+         # check that introduced variables are of good type
+        erh.check_arguments_data(
+           
+            (x, np.ndarray),
+            (y, np.ndarray),
+          
+        )
+        
+        if self.method=="backward":
+            res=self.backward_selection(x,y)
+        elif self.method=="forward":
+            res=self.forward_selection(x,y)
+        elif self.method=="stepwise":
+            res=self.stepwise_selection(x,y)
+        return res
+            
+    
+    
