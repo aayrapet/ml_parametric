@@ -35,3 +35,13 @@ In this project, the aim is to develop parametric models using only math and Num
 ## Testing
 
 All the work is thoroughly tested and summarized in the test notebook. This notebook executes, tests, and evaluates both models.
+
+
+
+
+
+## Versions
+
+- Python Version: 3.8.5
+- Numpy Version : 1.26.4
+- Pandas Version : 2.2.1
