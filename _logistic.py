@@ -50,7 +50,7 @@ class LogisticRegression(BaseEstimator):
         self.multiclass = multiclass
 
         self.proba = "not calculated yet"
-        self.true_labels_matrix = "not calculated yet"
+       
         self.params = "not calculated yet"
 
     def transform_y_vector_to_matrix(self, y: np.ndarray) -> np.ndarray:
@@ -118,6 +118,7 @@ class LogisticRegression(BaseEstimator):
 
         y = self.transform_y_vector_to_matrix(y)
 
+
         if self.multiclass == "binary":
             result_param = super().fit_base(x, y, "logistic")
 
@@ -137,9 +138,8 @@ class LogisticRegression(BaseEstimator):
 
         if self.need_to_store_results:
             self.params = result_param
-            self.true_labels_matrix = (
-                y if self.multiclass == "ovr" or self.multiclass == "softmax" else None
-            )
+            self.y =y 
+            
 
         return result_param
 
@@ -180,6 +180,32 @@ class LogisticRegression(BaseEstimator):
 
         return result_matrix
 
+    @staticmethod
+    def get_proba_binary(linear_predictions: np.ndarray)->np.ndarray:
+         """  
+         Get from linear predictions with sigmoid function probabilities
+         
+         """
+         proba = 1 / (1 + np.exp(-(linear_predictions)))
+         
+         return proba
+     
+    @staticmethod 
+    def get_proba_softmax(linear_predictions: np.ndarray)->np.ndarray:
+            """  
+            Get from linear predictions with softmax function probabilities
+            
+            """
+            numerator = np.exp(linear_predictions)
+
+            denominator = np.zeros(linear_predictions.shape[0])
+            for i in range(linear_predictions.shape[1]):
+                denominator = denominator + numerator[:, i]
+            denominator = np.column_stack([denominator] * linear_predictions.shape[1])
+            proba = numerator / denominator
+            
+            return proba
+        
     def predict(
         self,
         x: np.ndarray,
@@ -211,25 +237,19 @@ class LogisticRegression(BaseEstimator):
 
         if self.multiclass == "binary":
             # use sigmoid function
-            proba = 1 / (1 + np.exp(-(linear_predictions)))
+            proba = self.get_proba_binary(linear_predictions)
             prediction = np.array([1 if el >= threshold else 0 for el in proba])
 
         elif self.multiclass == "ovr":
             # use sigmoid function
-            proba = 1 / (1 + np.exp(-(linear_predictions)))
+            proba = self.get_proba_binary(linear_predictions)
             # normalise proba so that they sum up to 1
             normalised_proba = proba / self.normalise_predictions(proba)
             # transform matrix of proba to matrix of prediction
             prediction = self.from_proba_to_prediction(normalised_proba)
         elif self.multiclass == "softmax":
 
-            numerator = np.exp(linear_predictions)
-
-            denominator = np.zeros(linear_predictions.shape[0])
-            for i in range(linear_predictions.shape[1]):
-                denominator = denominator + numerator[:, i]
-            denominator = np.column_stack([denominator] * linear_predictions.shape[1])
-            proba = numerator / denominator
+            proba = self.get_proba_softmax(linear_predictions)
             # transform matrix of proba to matrix of prediction
             prediction = self.from_proba_to_prediction(proba)
 
@@ -260,21 +280,37 @@ class LogisticRegression(BaseEstimator):
             and BIC (Bayesian Information Criterion) values. Then, it calculates t-values and p-values
             for each parameter. The results are returned as a DataFrame.
         """
-        if self.multiclass in ["ovr", "softmax"]:
-            raise ValueError("no done yet, incoming")
-
         
+
+        if self.need_to_store_results and isinstance(self.proba, str):
+            raise ValueError("run .predict() first")
         
         if self.need_to_store_results:
             parameter = self.params
+            
             y=self.y
+            
+               
+           
             x=self.x
+            proba=self.proba
             if param_if_not_kept is not None or y_if_not_kept is not None or  x_if_not_kept is not None :
                 print("introduced param/y/x ignored, as we store results")
         else:
+            
             parameter = param_if_not_kept
             y=y_if_not_kept
+            
             x=super().add_intercept_f(x_if_not_kept)
+            
+            linear_predictions = super().predict_linear(x_if_not_kept, parameter)
+            
+            if self.multiclass in ["binary","ovr"]:
+                proba= self.get_proba_binary(linear_predictions)
+            elif self.multiclass =="softmax":
+                proba = self.get_proba_softmax(linear_predictions)
+                
+            
             if param_if_not_kept is None or y_if_not_kept is  None or x_if_not_kept is  None:
                 raise ValueError(
                     "we dont store results, so you neeed to introduce param"
@@ -283,14 +319,18 @@ class LogisticRegression(BaseEstimator):
         N = x.shape[0]
         p = x.shape[1]
 
+        if self.multiclass=="binary":
+           LL = y.T @ x @ parameter- np.sum(
+               np.log(1 + np.exp(x @ parameter))
+           )
+        else:
+            #positive cross entropy for OVR and softmax cases
+           
+            LL=np.sum(np.diag(y@np.log(proba.T)))#!!!!
         
-        LL = y.T @ x @ parameter- np.sum(
-            np.log(1 + np.exp(x @ parameter))
-        )
-
         AIC_ll = -2 * LL + 2 * (p)
         BIC_ll = -2 * LL + np.log(N) * (p)
-
+        
         criteria = {}
         criteria["LL"] = LL
         criteria["AIC_ll"] = AIC_ll
@@ -298,14 +338,10 @@ class LogisticRegression(BaseEstimator):
         
         if only_IC:
             return criteria
-        
+        if self.multiclass in ["softmax","ovr"]:
+            raise ValueError("not done yet, incoming")
         #another part that does not need to have introduced to arguments parameters
-        
-        
-        if isinstance(self.proba, str):
-            raise ValueError("run .predict() first")
-        
-        
+      
         w = self.proba * (1 - self.proba)
         Wdiag = np.diag(w)
         std_params = np.sqrt(np.diag(np.linalg.inv(x.T @ Wdiag @ x)))
@@ -353,6 +389,7 @@ class LogisticRegression(BaseEstimator):
             This method assumes that the model has already been fitted. It uses the provided method
             and criterion to perform automatic variable selection and returns the indices of the selected variables.
         """
-
+        
+        
         result=super().autoselection(method,criterion,print_message)
         return result

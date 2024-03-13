@@ -172,9 +172,10 @@ class AutoSelect:
             if len(index)!=0:
                 for i in range(len(index)):
                     new_index = np.hstack((final_index, index[i]))
-                    
+               
                     #run model on selected set of variables
                     parameter = self.Class_algorithm.fit(x[:, new_index], y)
+                    
                     criteria = self.Class_algorithm.get_inference(
                         #only calculate IC
                         only_IC=True,
@@ -186,7 +187,7 @@ class AutoSelect:
                     this_criterion = criteria[self.inf_criterion]
                     min_aic.append(this_criterion)
                 # find position of minimal IC over these models
-                
+              
                 index_min = np.argmin(min_aic)
                 index_found = index[index_min]
                 # add minimal IC to the IC list, so that we can compare two last IC

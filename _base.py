@@ -467,6 +467,7 @@ class BaseEstimator:
 
         # add intercept (or not)
         x = self.add_intercept_f(x)
+      
         pred = x @ parameter
 
         return pred
@@ -483,6 +484,7 @@ class BaseEstimator:
         ] = "BIC_ll",
         print_message: bool=True
     )->np.ndarray:
+        
         
         """
         Perform automatic variable selection for the model.
@@ -509,6 +511,9 @@ class BaseEstimator:
         if self.add_intercept:
             x=self.x[:,1:]
             
+            
         sel = AutoSelect(self, method, criterion)
         index_selected_variables=sel.fit(x, self.y)
+        #get back print option 
+        self.print_message=True
         return index_selected_variables
