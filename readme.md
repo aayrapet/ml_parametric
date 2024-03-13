@@ -4,7 +4,7 @@ In this project, the aim is to develop parametric models using only math and Num
 
 ## Modules
 
-- **base**: Contains the Gradient Descent optimizer, which includes classic Gradient Descent for Generalized Linear Models. It also has extensions such as stochastic gradient descent and Newton-Raphson. Additionally, this module stores `BaseEstimator`, which serves as the base estimator for GLM, such as Linear Regression and Logistic Regression.
+- **base**: Contains the `GradientDescent` optimizer, which includes classic Gradient Descent for Generalized Linear Models. It also has extensions such as stochastic gradient descent and Newton-Raphson. Additionally, this module stores `BaseEstimator`, which serves as the base estimator for GLM, such as Linear Regression and Logistic Regression.
 
 - **linear**: Stores the `LinearRegression` model.
 
