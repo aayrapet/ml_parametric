@@ -2,8 +2,7 @@
 
 In this project, the aim is to develop parametric models using only math and NumPy. The project is organized into the following modules:
 
-\[
-\sigma(z)_i = \frac{e^{z_i}}{\sum_{j=1}^{K} e^{z_j}} ]
+$$f(x) = x^2$$
 
     
 
