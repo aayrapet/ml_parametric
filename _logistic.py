@@ -68,13 +68,15 @@ class LogisticRegression(BaseEstimator):
             formats the target vector into a matrix using one-hot encoding. It checks
             if the input vector is already in matrix form, and if not, converts it.
         """
-        if self.multiclass == "ovr" or self.multiclass == "softmax":
-            # if a multiclass vector is introducred then format it as matrix (one hot encoding)
-            if len(y.shape) == 1:
-
-                unique_classes = sorted(np.unique(y))
-                ft = True
-                for unique_class in unique_classes:
+        #if the introduced y is a pre-transofrmed matrix-> skip this step , otherwise transform 
+        #maybe include descending ascending parameter
+        #attention, you have to include afterwards which reference class is modelised ( in original y notation)
+        if len(y.shape) == 1:
+            unique_classes = sorted(np.unique(y))
+            ft = True
+            #identify number of classes, if logistic then use K-1 classes encoding, if ovr then K classes encoding
+            number_classes=len(unique_classes) if self.multiclass=="ovr" else len(unique_classes)-1
+            for unique_class in unique_classes[:number_classes]:
                     class_y = np.array([1 if el == unique_class else 0 for el in y])
 
                     if ft:
@@ -87,8 +89,9 @@ class LogisticRegression(BaseEstimator):
                             (result_true_label, class_y)
                         )
 
-                y = result_true_label
-
+            y = result_true_label.copy()
+                
+            
         return y
 
     def fit(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
@@ -122,8 +125,16 @@ class LogisticRegression(BaseEstimator):
         if self.multiclass == "binary":
             result_param = super().fit_base(x, y, "logistic")
 
-        elif self.multiclass == "softmax":
-            result_param = super().fit_base(x, y, "logistic softmax")
+        
+        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!        
+        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!    
+        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!        
+        #dont use ovr for the moment, maybe we have to do ovr with original manner? or maybe not? TEST!!!!  
+        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!    
+        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!    
+        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!    
+        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!    
+          
         elif self.multiclass == "ovr":
             ft = True
             for class_y in y.T:
@@ -151,6 +162,7 @@ class LogisticRegression(BaseEstimator):
         sum_columns = np.array(([sum(x) for x in zip(*proba.T)]))
 
         sum_columns = np.column_stack([sum_columns] * proba.shape[1])
+       
         return sum_columns
 
     @staticmethod
@@ -179,30 +191,25 @@ class LogisticRegression(BaseEstimator):
             result_matrix[i] = new_row
 
         return result_matrix
-
-    @staticmethod
-    def get_proba_binary(linear_predictions: np.ndarray)->np.ndarray:
-         """  
-         Get from linear predictions with sigmoid function probabilities
-         
-         """
-         proba = 1 / (1 + np.exp(-(linear_predictions)))
-         
-         return proba
      
-    @staticmethod 
-    def get_proba_softmax(linear_predictions: np.ndarray)->np.ndarray:
+    
+    def get_proba(self,linear_predictions: np.ndarray)->np.ndarray:
             """  
             Get from linear predictions with softmax function probabilities
             
             """
             numerator = np.exp(linear_predictions)
-
+            
+            
             denominator = np.zeros(linear_predictions.shape[0])
-            for i in range(linear_predictions.shape[1]):
-                denominator = denominator + numerator[:, i]
-            denominator = np.column_stack([denominator] * linear_predictions.shape[1])
-            proba = numerator / denominator
+            
+            for i in range(linear_predictions.ndim):
+                denominator = denominator + numerator[:, i] if linear_predictions.ndim>1 else denominator + numerator
+            if self.multiclass!="ovr":
+                denominator=denominator+np.exp(0)#we add reference class
+            denominator = np.column_stack([denominator] * linear_predictions.shape[1])  if linear_predictions.ndim>1  else denominator
+            
+            proba = numerator / denominator                        
             
             return proba
         
@@ -235,23 +242,16 @@ class LogisticRegression(BaseEstimator):
         erh.check_arguments_data((x, np.ndarray), (threshold, float))
         linear_predictions = super().predict_linear(x, param_if_not_kept)
 
-        if self.multiclass == "binary":
-            # use sigmoid function
-            proba = self.get_proba_binary(linear_predictions)
-            prediction = np.array([1 if el >= threshold else 0 for el in proba])
-
-        elif self.multiclass == "ovr":
-            # use sigmoid function
-            proba = self.get_proba_binary(linear_predictions)
-            # normalise proba so that they sum up to 1
-            normalised_proba = proba / self.normalise_predictions(proba)
-            # transform matrix of proba to matrix of prediction
-            prediction = self.from_proba_to_prediction(normalised_proba)
-        elif self.multiclass == "softmax":
-
-            proba = self.get_proba_softmax(linear_predictions)
-            # transform matrix of proba to matrix of prediction
-            prediction = self.from_proba_to_prediction(proba)
+        proba = self.get_proba(linear_predictions)
+        
+        if self.multiclass!="ovr":
+            proba_K_class=(1-np.array(([sum(x) for x in zip(*proba.T)])))
+            proba=np.column_stack(((proba,proba_K_class)))
+        else:
+            proba=proba/ self.normalise_predictions(proba)
+        prediction = self.from_proba_to_prediction(proba)
+        
+        
 
         if self.need_to_store_results:
             self.proba = proba

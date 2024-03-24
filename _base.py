@@ -134,34 +134,44 @@ class GradientDescent:
         if self.regression == "linear":
             prediction = x @ B
             gradient = (2 * (y - prediction)).T @ x
+            
         elif self.regression == "logistic":
-            prediction = 1 / (1 + np.exp(-(x @ B)))
-            gradient = x.T @ (y - prediction)
-        elif self.regression == "logistic softmax":
-            lin_y = x @ B
+            
+            linear_predictions = x @ B
+         
+            numerator = np.exp(linear_predictions)
+                        
+            denominator = np.zeros(linear_predictions.shape[0])
+            
+            for i in range(linear_predictions.ndim):
+                denominator = denominator + numerator[:, i] if linear_predictions.ndim>1 else denominator + numerator
+            denominator=denominator+np.exp(0)#we add reference class
+            denominator = np.column_stack([denominator] * linear_predictions.shape[1])  if linear_predictions.ndim>1  else denominator
+            
+            proba = numerator / denominator #if linear_predictions.ndim>1  else np.array([list(num_el/den_el) for num_el, den_el in zip( numerator,denominator)])
+            
+           
+            
+            # for i in range(lin_y.shape[1]):
+            #     denominator = denominator + numerator[:, i]
+            # denominator=denominator+np.exp(0)
+            # denominator = np.column_stack([denominator] * lin_y.shape[1])
 
-            numerator = np.exp(lin_y)
-
-            denominator = np.zeros(lin_y.shape[0])
-            for i in range(lin_y.shape[1]):
-                denominator = denominator + numerator[:, i]
-            denominator = np.column_stack([denominator] * lin_y.shape[1])
-
-            prediction = numerator / denominator
-            gradient = x.T @ (y - prediction)
-
-        if self.newton_raphson and self.regression == "logistic softmax":
-            raise ValueError("not done yet,incoming")
+            # prediction = numerator / denominator
+            gradient = x.T @ (y - proba)
+          
+        # if self.newton_raphson and self.regression == "logistic softmax":
+        #     raise ValueError("not done yet,incoming")
 
         # If learn_rate is an scalar (GD)
         if not self.newton_raphson:
-
+            
             B = B + self.learning_rate * gradient
 
-        # If learn_rate is an inverse of hessian (NR)
+        # If learn_rate is an inverse of hessian (NR), HERE ADD YOUR BLOCK MATRIX 
         elif self.newton_raphson:
-            if "logistic" in self.regression:
-                w = prediction * (1 - prediction)
+            if  self.regression=="logistic":
+                w = proba * (1 - proba)
                 Wdiag = np.diag(w)
                 self.learning_rate = np.linalg.inv(x.T @ Wdiag @ x)
 
@@ -257,10 +267,16 @@ class GradientDescent:
             B = np.linalg.inv(self.x.T @ self.x) @ self.x.T @ self.y
             return B
         p = self.x.shape[1]
-        if self.regression == "logistic softmax":
-            B = np.zeros((self.x.shape[1], self.y.shape[1]))
-        else:
-            B = np.zeros(p)
+        if self.regression == "logistic":
+            # B = np.zeros((self.x.shape[1], self.y.shape[1]))
+            
+            
+            
+            
+            if self.y.ndim==1:
+                B=np.zeros((self.x.shape[1]))
+            else:
+                B = np.zeros((self.x.shape[1],self.y.ndim))
 
         with warnings.catch_warnings(record=True) as w:
             # Vanilla gradient descent (or batch gradient descent)
