@@ -1,9 +1,7 @@
 # Machine Learning Project
 
 In this project, the aim is to develop parametric models using only math and NumPy. The project is organized into the following modules:
-$$
-\text{softmax}(x_i) = \frac{e^{x_i^2}}{\sum_{j=1}^{N} e^{x_j^2}}
-$$
+
 
     
 
@@ -15,11 +13,6 @@ $$
 
 - **logistic**: Stores the `LogisticRegression` model:
   - Softmax function (generalisation of sigmoid function)
-    
-    \[
-    \sigma(z)_i = \frac{e^{z_i}}{\sum_{j=1}^{K} e^{z_j}}
-    \]
-    
   - One vs Rest algorithm
 
 - **autoselect**: Stores the `Autoselection` of variables class. It selects variables using information Criteria defined by user. It has three oprions: backward, forward and stepwise regressions
