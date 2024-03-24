@@ -10,6 +10,7 @@ import numpy as np
 from typing import Literal
 from _base import BaseEstimator
 from scipy.stats import t
+from itertools import product
 
 
 class LogisticRegression(BaseEstimator):
@@ -155,7 +156,7 @@ class LogisticRegression(BaseEstimator):
         return result_param
 
     @staticmethod
-    def normalise_predictions(proba: np.ndarray) -> np.ndarray:
+    def __normalise_predictions(proba: np.ndarray) -> np.ndarray:
         """ "
         In case of OVR regression, normalise probabilities
         """
@@ -166,7 +167,7 @@ class LogisticRegression(BaseEstimator):
         return sum_columns
 
     @staticmethod
-    def from_proba_to_prediction(proba: np.ndarray) -> np.ndarray:
+    def __from_proba_to_prediction(proba: np.ndarray) -> np.ndarray:
         """
         Converts probability scores to class predictions.
 
@@ -193,7 +194,7 @@ class LogisticRegression(BaseEstimator):
         return result_matrix
      
     
-    def get_proba(self,linear_predictions: np.ndarray)->np.ndarray:
+    def __get_proba(self,linear_predictions: np.ndarray)->np.ndarray:
             """  
             Get from linear predictions with softmax function probabilities
             
@@ -254,8 +255,8 @@ class LogisticRegression(BaseEstimator):
             proba=np.column_stack(((proba,proba_K_class)))
             
         else:
-            proba=proba/ self.normalise_predictions(proba)
-        prediction = self.from_proba_to_prediction(proba)
+            proba=proba/ self.__normalise_predictions(proba)
+        prediction = self.__from_proba_to_prediction(proba)
         
         
 
@@ -263,6 +264,75 @@ class LogisticRegression(BaseEstimator):
             self.proba = proba
 
         return prediction
+
+    
+    @staticmethod
+    def __block_diagonal(matrix,nb_blocks):
+      """ 
+      Duplicates matrix X n times on  a diagonal to get a diagonal block matrix, other blocks being 0
+      
+      """
+      N,p=matrix.shape  
+      block=np.zeros((N*nb_blocks,p*nb_blocks))
+      
+      for i in range(nb_blocks):
+        block[i*N:N*(i+1),i*p:p*(i+1)]=matrix
+      return block
+  
+    
+    def __block_prob_matrix(self,nb_blocks):
+       """ 
+       Get block matrix of probabilities. 
+       On diagonal terms we get diagonal matrices Pki*(1-Pki) .... P(k-1)i*(1-P(k-1)i)
+       On other terms we get diagonal matrices Pki*Pli .... P(k-1)i*(P(l-1)i)
+       
+       Returns
+       ------
+       
+       Probability matrix W
+       
+       References
+       --------
+       
+       To visualise go to : https://github.com/aayrapet/ml_parametric/issues/1
+       
+       
+       """
+       proba= self.proba[:,:-1]
+       size_block=proba.shape[0]
+        
+       list_values=list(range(nb_blocks))
+       all_combinations=list(product(list_values, repeat=2))
+       print(all_combinations)
+       nb=len(list_values)
+       
+       W=np.zeros((nb*size_block,nb*size_block))
+       i=-1
+       
+       el_old=[100]
+       for el in all_combinations:
+          
+           if el_old[0]==el[0]:
+               j=j+1
+           else:
+               #go on the next line
+               j=0
+               i=i+1
+           
+           #block is respective probabilities matrix that will be injected as diagonal matrix
+           if el[0]==el[1]:
+               block=proba[:,el[0]]*(1-proba[:,el[0]])
+           else:
+               block=proba[:,el[0]]*(proba[:,el[1]])
+               
+           W[el[0]*size_block :size_block*(i+1 ) ,el[1]*size_block :size_block*(j+1)]=np.diag(block)
+           el_old=el
+           
+       return((W))
+        
+
+
+
 
     def get_inference(
         self,
@@ -299,11 +369,11 @@ class LogisticRegression(BaseEstimator):
                
            
             x=self.x
-            proba=self.proba
+            proba=self.proba[:,:-1]
             if param_if_not_kept is not None or y_if_not_kept is not None or  x_if_not_kept is not None :
                 print("introduced param/y/x ignored, as we store results")
         else:
-            
+            #correct it all here!!!!!!!!!!!!
             parameter = param_if_not_kept
             y=y_if_not_kept
             
@@ -325,13 +395,13 @@ class LogisticRegression(BaseEstimator):
         N = x.shape[0]
         p = x.shape[1]
 
-        if self.multiclass=="binary":
+        if self.y.ndim==1:
            LL = y.T @ x @ parameter- np.sum(
                np.log(1 + np.exp(x @ parameter))
            )
         else:
             #positive cross entropy for OVR and softmax cases
-           
+        
             LL=np.sum(np.diag(y@np.log(proba.T)))#!!!!
         
         AIC_ll = -2 * LL + 2 * (p)
@@ -344,13 +414,26 @@ class LogisticRegression(BaseEstimator):
         
         if only_IC:
             return criteria
+        
+        
+        
+        
+        #starting from here -> change to have good inference based on block matrices, finally validate it with 10 digit data
+        nb_dimensions=1 if y.ndim==1 else y.shape[1]
+        
+        xx=self.__block_diagonal(super().add_intercept_f(x),nb_dimensions)
+        ww=self.__block_prob_matrix(nb_dimensions)
+        vector_std_errors=np.sqrt(np.diag((np.linalg.inv(xx.T@ww@xx))))
+        #automate after ... and once it is done, correct the part above when results are not stored
+        
+        
         if self.multiclass in ["softmax","ovr"]:
             raise ValueError("not done yet, incoming")
         #another part that does not need to have introduced to arguments parameters
       
-        w = self.proba * (1 - self.proba)
-        Wdiag = np.diag(w)
-        std_params = np.sqrt(np.diag(np.linalg.inv(x.T @ Wdiag @ x)))
+        # w = self.proba * (1 - self.proba)
+        # Wdiag = np.diag(w)
+        # std_params = np.sqrt(np.diag(np.linalg.inv(x.T @ Wdiag @ x)))
         if self.need_to_store_results:
             self.criteria = criteria
         # calculate variance covariance matrix and p values of parameters
