@@ -10,10 +10,12 @@ In this project, the aim is to develop parametric models using only math and Num
 
 - **logistic**: Stores the `LogisticRegression` model:
   - Softmax function (generalisation of sigmoid function)
-\[
-\sigma(z)_i = \frac{e^{z_i}}{\sum_{k=1}^{K} e^{z_k}}
-\]
-    - One vs Rest algorithm
+    
+    \[
+    \sigma(z)_i = \frac{e^{z_i}}{\sum_{j=1}^{K} e^{z_j}}
+    \]
+    
+  - One vs Rest algorithm
 
 - **autoselect**: Stores the `Autoselection` of variables class. It selects variables using information Criteria defined by user. It has three oprions: backward, forward and stepwise regressions
 
