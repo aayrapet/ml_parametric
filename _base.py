@@ -142,8 +142,9 @@ class GradientDescent:
             numerator = np.exp(linear_predictions)
                         
             denominator = np.zeros(linear_predictions.shape[0])
+            nb_cols=linear_predictions.shape[1] if linear_predictions.ndim>1 else linear_predictions.ndim
             
-            for i in range(linear_predictions.ndim):
+            for i in range(nb_cols):
                 denominator = denominator + numerator[:, i] if linear_predictions.ndim>1 else denominator + numerator
             denominator=denominator+np.exp(0)#we add reference class
             denominator = np.column_stack([denominator] * linear_predictions.shape[1])  if linear_predictions.ndim>1  else denominator

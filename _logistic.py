@@ -203,7 +203,10 @@ class LogisticRegression(BaseEstimator):
             
             denominator = np.zeros(linear_predictions.shape[0])
             
-            for i in range(linear_predictions.ndim):
+            nb_cols=linear_predictions.shape[1] if linear_predictions.ndim>1 else linear_predictions.ndim
+            
+            
+            for i in range(nb_cols):
                 denominator = denominator + numerator[:, i] if linear_predictions.ndim>1 else denominator + numerator
             if self.multiclass!="ovr":
                 denominator=denominator+np.exp(0)#we add reference class
@@ -245,8 +248,11 @@ class LogisticRegression(BaseEstimator):
         proba = self.get_proba(linear_predictions)
         
         if self.multiclass!="ovr":
-            proba_K_class=(1-np.array(([sum(x) for x in zip(*proba.T)])))
+            
+            proba_K_class=(1-np.array(([sum(x) for x in zip(*proba.T)]))) if linear_predictions.ndim>1 else 1-proba
+           
             proba=np.column_stack(((proba,proba_K_class)))
+            
         else:
             proba=proba/ self.normalise_predictions(proba)
         prediction = self.from_proba_to_prediction(proba)
