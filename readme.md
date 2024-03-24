@@ -1,8 +1,9 @@
 # Machine Learning Project
 
 In this project, the aim is to develop parametric models using only math and NumPy. The project is organized into the following modules:
-
-$$f(x) = x^2$$
+$$
+\text{softmax}(x_i) = \frac{e^{x_i^2}}{\sum_{j=1}^{N} e^{x_j^2}}
+$$
 
     
 
