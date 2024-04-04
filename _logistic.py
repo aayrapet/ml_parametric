@@ -130,7 +130,6 @@ class LogisticRegression(BaseEstimator):
 
             result_param = super().fit_base(x, y, "logistic")
 
-   
         elif self.multiclass == "ovr":
             ft = True
             for class_y in y.T:
@@ -377,6 +376,8 @@ class LogisticRegression(BaseEstimator):
         ww = block_prob_matrix(proba, nb_dimensions)
 
         # variance covariance matrix is inverse of hessian
+        # attention, if there is numerical instability ( alg did not converge or converges 
+        # slowly then diagonal elements of hessian can be negative so we would not be able to calculate std)
         # print(np.diag((np.linalg.inv(xx.T@ww@xx))))
         vector_std_errors = np.sqrt(np.diag((np.linalg.inv(xx.T @ ww @ xx))))
 
@@ -460,7 +461,7 @@ class LogisticRegression(BaseEstimator):
 
         if self.need_to_store_results:
             self.criteria = criteria
-       
+
         return df
 
     def autoselection(
