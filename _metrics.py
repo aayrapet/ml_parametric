@@ -239,7 +239,7 @@ def CrossValidation(
 
     # check if arguments are of good type
     erh.check_arguments_data(
-        (Class_algorithm, "__class__"),
+        # (Class_algorithm, "__class__"),
         (x, np.ndarray),
         (y, np.ndarray),
         (metrics_function, types.FunctionType),
@@ -306,6 +306,8 @@ def CrossValidation(
         # modelling
         parameter = Class_algorithm.fit(x_train, y_train)
         y_test_predicted = Class_algorithm.predict(x_test, parameter)
+        
+       
         metric = metrics_function(y_test, y_test_predicted)
         metrics_list.append(metric)
     Class_algorithm.need_to_store_results = True

@@ -62,7 +62,7 @@ class AutoSelect:
        
         """
         #check that data types are good 
-        erh.check_arguments_data((Class_algorithm,"__class__"),(method,str),(inf_criterion,str))
+        erh.check_arguments_data((method,str),(inf_criterion,str))
         
         
         if method not in ["backward", "forward", "stepwise"]:

@@ -11,6 +11,7 @@ import numpy as np
 from typing import Literal
 import warnings
 import math as mt
+from itertools import product
 
 
 class GradientDescent:
@@ -160,6 +161,7 @@ class GradientDescent:
 
             # prediction = numerator / denominator
             gradient = x.T @ (y - proba)
+            
           
         # if self.newton_raphson and self.regression == "logistic softmax":
         #     raise ValueError("not done yet,incoming")
@@ -169,13 +171,24 @@ class GradientDescent:
             
             B = B + self.learning_rate * gradient
 
-        # If learn_rate is an inverse of hessian (NR), HERE ADD YOUR BLOCK MATRIX 
+        # If learn_rate is an inverse of hessian (NR)
         elif self.newton_raphson:
             if  self.regression=="logistic":
-                w = proba * (1 - proba)
-                Wdiag = np.diag(w)
-                self.learning_rate = np.linalg.inv(x.T @ Wdiag @ x)
-
+                
+                nb_dimensions=1 if y.ndim==1 else y.shape[1]
+                #error
+                if nb_dimensions>1:
+                    raise ValueError('Newton Raphson for multinomial logit is not ready')
+                xx=block_diagonal(x,nb_dimensions)
+                if proba.ndim==1:
+                    proba=proba.reshape(proba.shape[0],1)
+                ww=block_prob_matrix(proba,nb_dimensions)
+                
+                self.learning_rate = np.linalg.inv(xx.T @ ww @ xx)
+                
+                
+                
+                
             B = B + self.learning_rate @ gradient
 
         change = np.sum((B - B_old) ** 2)
@@ -277,8 +290,9 @@ class GradientDescent:
             if self.y.ndim==1:
                 B=np.zeros((self.x.shape[1]))
             else:
-                B = np.zeros((self.x.shape[1],self.y.ndim))
-
+                B = np.zeros((self.x.shape[1],self.y.shape[1]))
+        elif self.regression =="linear":
+                B=np.zeros((self.x.shape[1]))
         with warnings.catch_warnings(record=True) as w:
             # Vanilla gradient descent (or batch gradient descent)
             if not stochastic:
@@ -527,6 +541,8 @@ class BaseEstimator:
             raise ValueError("fit the model first, then do autoselect")
         if self.add_intercept:
             x=self.x[:,1:]
+        else:
+            x=self.x
             
             
         sel = AutoSelect(self, method, criterion)
@@ -534,3 +550,71 @@ class BaseEstimator:
         #get back print option 
         self.print_message=True
         return index_selected_variables
+
+
+
+
+
+
+def block_diagonal(matrix,nb_blocks):
+      """ 
+      Duplicates matrix X n times on  a diagonal to get a diagonal block matrix, other blocks being 0
+      
+      """
+      N,p=matrix.shape  
+      block=np.zeros((N*nb_blocks,p*nb_blocks))
+      
+      for i in range(nb_blocks):
+        block[i*N:N*(i+1),i*p:p*(i+1)]=matrix
+      return block
+  
+    
+def block_prob_matrix(matrix,nb_blocks):
+       """ 
+       Get block matrix of probabilities. 
+       On diagonal terms we get diagonal matrices Pki*(1-Pki) .... P(k-1)i*(1-P(k-1)i)
+       On other terms we get diagonal matrices Pki*Pli .... P(k-1)i*(P(l-1)i)
+       
+       Returns
+       ------
+       
+       Probability matrix W
+       
+       References
+       --------
+       
+       To visualise go to : https://github.com/aayrapet/ml_parametric/issues/1
+       
+       
+       """
+       
+       size_block=matrix.shape[0]
+        
+       list_values=list(range(nb_blocks))
+       all_combinations=list(product(list_values, repeat=2))
+       
+       nb=len(list_values)
+       
+       W=np.zeros((nb*size_block,nb*size_block))
+       i=-1
+       
+       el_old=[100]
+       for el in all_combinations:
+          
+           if el_old[0]==el[0]:
+               j=j+1
+           else:
+               #go on the next line
+               j=0
+               i=i+1
+           
+           #block is respective probabilities matrix that will be injected as diagonal matrix
+           if el[0]==el[1]:
+               block=matrix[:,el[0]]*(1-matrix[:,el[0]])
+           else:
+               block=(-1)*matrix[:,el[0]]*(matrix[:,el[1]])
+               
+           W[el[0]*size_block :size_block*(i+1 ) ,el[1]*size_block :size_block*(j+1)]=np.diag(block)
+           el_old=el
+           
+       return((W))

@@ -115,7 +115,7 @@ class LinearRegression(BaseEstimator):
         return result_param
 
     def predict(
-        self, x: np.ndarray, param_if_not_kept: np.ndarray = None
+        self, x: np.ndarray, param_if_not_kept: np.ndarray = None, 
     ) -> np.ndarray:
         """
         Predict y using x matrix
