@@ -13,6 +13,7 @@ from scipy.stats import t
 from itertools import product
 from _base import block_diagonal, block_prob_matrix
 
+
 class LogisticRegression(BaseEstimator):
     def __init__(
         self,
@@ -24,7 +25,6 @@ class LogisticRegression(BaseEstimator):
         mini_batch_size: int = 32,
         need_to_store_results: bool = True,
         multiclass: Literal["binary", "ovr", "softmax"] = "binary",
-        
     ):
 
         if solver not in ["sgd", "gd", "nr"]:
@@ -52,10 +52,8 @@ class LogisticRegression(BaseEstimator):
         self.multiclass = multiclass
 
         self.proba = "not calculated yet"
-       
+
         self.params = "not calculated yet"
-        
-        
 
     def transform_y_vector_to_matrix(self, y: np.ndarray) -> np.ndarray:
         """
@@ -72,30 +70,31 @@ class LogisticRegression(BaseEstimator):
             formats the target vector into a matrix using one-hot encoding. It checks
             if the input vector is already in matrix form, and if not, converts it.
         """
-        #if the introduced y is a pre-transofrmed matrix-> skip this step , otherwise transform 
-        #maybe include descending ascending parameter
-        #attention, you have to include afterwards which reference class is modelised ( in original y notation)
+        # if the introduced y is a pre-transofrmed matrix-> skip this step , otherwise transform
+        # maybe include descending ascending parameter
+        # attention, you have to include afterwards which reference class is modelised ( in original y notation)
         if len(y.shape) == 1:
             unique_classes = sorted(np.unique(y))
             ft = True
-            #identify number of classes, if logistic then use K-1 classes encoding, if ovr then K classes encoding
-            number_classes=len(unique_classes) if self.multiclass=="ovr" else len(unique_classes)-1
+            # identify number of classes, if logistic then use K-1 classes encoding, if ovr then K classes encoding
+            number_classes = (
+                len(unique_classes)
+                if self.multiclass == "ovr"
+                else len(unique_classes) - 1
+            )
             for unique_class in unique_classes[:number_classes]:
-                    class_y = np.array([1 if el == unique_class else 0 for el in y])
+                class_y = np.array([1 if el == unique_class else 0 for el in y])
 
-                    if ft:
-                        ft = False
+                if ft:
+                    ft = False
 
-                        result_true_label = class_y
-                    else:
+                    result_true_label = class_y
+                else:
 
-                        result_true_label = np.column_stack(
-                            (result_true_label, class_y)
-                        )
+                    result_true_label = np.column_stack((result_true_label, class_y))
 
             y = result_true_label.copy()
-                
-            
+
         return y
 
     def fit(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
@@ -122,26 +121,24 @@ class LogisticRegression(BaseEstimator):
 
         """
         erh.check_arguments_data((x, np.ndarray), (y, np.ndarray))
-        
-        self.nb_unique_classes=sorted(np.unique(y))
-        
-        y = self.transform_y_vector_to_matrix(y) if len(np.unique(y))>2 else y 
 
+        self.nb_unique_classes = sorted(np.unique(y))
+
+        y = self.transform_y_vector_to_matrix(y) if len(np.unique(y)) > 2 else y
 
         if self.multiclass == "binary":
-           
+
             result_param = super().fit_base(x, y, "logistic")
 
-        
-        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!        
-        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!    
-        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!        
-        #dont use ovr for the moment, maybe we have to do ovr with original manner? or maybe not? TEST!!!!  
-        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!    
-        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!    
-        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!    
-        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!    
-          
+        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # dont use ovr for the moment, maybe we have to do ovr with original manner? or maybe not? TEST!!!!
+        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
         elif self.multiclass == "ovr":
             ft = True
             for class_y in y.T:
@@ -156,11 +153,9 @@ class LogisticRegression(BaseEstimator):
 
         if self.need_to_store_results:
             self.params = result_param
-            
-            
-            #HERE PRIORITY 1
-            self.y =y 
-            
+
+            # HERE PRIORITY 1
+            self.y = y
 
         return result_param
 
@@ -172,7 +167,7 @@ class LogisticRegression(BaseEstimator):
         sum_columns = np.array(([sum(x) for x in zip(*proba.T)]))
 
         sum_columns = np.column_stack([sum_columns] * proba.shape[1])
-       
+
         return sum_columns
 
     @staticmethod
@@ -201,37 +196,46 @@ class LogisticRegression(BaseEstimator):
             result_matrix[i] = new_row
 
         return result_matrix
-     
-    
-    def __get_proba(self,linear_predictions: np.ndarray)->np.ndarray:
-            """  
-            Get from linear predictions with softmax function probabilities
-            
-            """
-            numerator = np.exp(linear_predictions)
-            
-            
-            denominator = np.zeros(linear_predictions.shape[0])
-            
-            nb_cols=linear_predictions.shape[1] if linear_predictions.ndim>1 else linear_predictions.ndim
-            
-            
-            for i in range(nb_cols):
-                denominator = denominator + numerator[:, i] if linear_predictions.ndim>1 else denominator + numerator
-            if self.multiclass!="ovr":
-                denominator=denominator+np.exp(0)#we add reference class
-            denominator = np.column_stack([denominator] * linear_predictions.shape[1])  if linear_predictions.ndim>1  else denominator
-            
-            proba = numerator / denominator                        
-            
-            return proba
-        
+
+    def __get_proba(self, linear_predictions: np.ndarray) -> np.ndarray:
+        """
+        Get from linear predictions with softmax function probabilities
+
+        """
+        numerator = np.exp(linear_predictions)
+
+        denominator = np.zeros(linear_predictions.shape[0])
+
+        nb_cols = (
+            linear_predictions.shape[1]
+            if linear_predictions.ndim > 1
+            else linear_predictions.ndim
+        )
+
+        for i in range(nb_cols):
+            denominator = (
+                denominator + numerator[:, i]
+                if linear_predictions.ndim > 1
+                else denominator + numerator
+            )
+        if self.multiclass != "ovr":
+            denominator = denominator + np.exp(0)  # we add reference class
+        denominator = (
+            np.column_stack([denominator] * linear_predictions.shape[1])
+            if linear_predictions.ndim > 1
+            else denominator
+        )
+
+        proba = numerator / denominator
+
+        return proba
+
     def predict(
         self,
         x: np.ndarray,
         param_if_not_kept: np.ndarray = None,
         threshold: float = 0.5,
-        last_class: bool = True
+        last_class: bool = True,
     ):
         """
         Predicts class labels for input data.
@@ -253,38 +257,42 @@ class LogisticRegression(BaseEstimator):
 
         """
 
-        erh.check_arguments_data((x, np.ndarray), (threshold, float), (last_class,bool))
+        erh.check_arguments_data(
+            (x, np.ndarray), (threshold, float), (last_class, bool)
+        )
         linear_predictions = super().predict_linear(x, param_if_not_kept)
 
         proba = self.__get_proba(linear_predictions)
-        
-        if self.multiclass!="ovr" :
-            
-            proba_K_class=(1-np.array(([sum(x) for x in zip(*proba.T)]))) if linear_predictions.ndim>1 else 1-proba
-           
-            proba=np.column_stack(((proba,proba_K_class)))
-            
-        elif self.multiclass=="ovr":
-            proba=proba/ self.__normalise_predictions(proba)
+
+        if self.multiclass != "ovr":
+
+            proba_K_class = (
+                (1 - np.array(([sum(x) for x in zip(*proba.T)])))
+                if linear_predictions.ndim > 1
+                else 1 - proba
+            )
+
+            proba = np.column_stack(((proba, proba_K_class)))
+
+        elif self.multiclass == "ovr":
+            proba = proba / self.__normalise_predictions(proba)
         prediction = self.__from_proba_to_prediction(proba)
-        
+
         # if not last_class:
-        len_pred=prediction.shape[1]
-        prediction=prediction[:,:-1] if self.multiclass!="ovr" else prediction
-        prediction=prediction.reshape(prediction.shape[0],) if len_pred==2 else prediction
-        
-        
+        len_pred = prediction.shape[1]
+        prediction = prediction[:, :-1] if self.multiclass != "ovr" else prediction
+        prediction = (
+            prediction.reshape(
+                prediction.shape[0],
+            )
+            if len_pred == 2
+            else prediction
+        )
 
         if self.need_to_store_results:
             self.proba = proba
 
         return prediction
-
-    
- 
-
-
-
 
     def get_inference(
         self,
@@ -292,8 +300,7 @@ class LogisticRegression(BaseEstimator):
         param_if_not_kept: np.ndarray = None,
         y_if_not_kept: np.ndarray = None,
         x_if_not_kept: np.ndarray = None,
-        ordered_columns_names : np.ndarray =None
-    
+        ordered_columns_names: np.ndarray = None,
     ) -> pd.DataFrame:
         """
         Calculates inference statistics and parameter estimates.
@@ -310,123 +317,157 @@ class LogisticRegression(BaseEstimator):
             and BIC (Bayesian Information Criterion) values. Then, it calculates t-values and p-values
             for each parameter. The results are returned as a DataFrame.
         """
-        if self.multiclass=="ovr" and only_IC==False:
-            raise ValueError("for OVR there is no parameter significance, use standard logistic regression")
+        if self.multiclass == "ovr" and only_IC == False:
+            raise ValueError(
+                "for OVR there is no parameter significance, use standard logistic regression"
+            )
 
         if self.need_to_store_results and isinstance(self.proba, str):
             raise ValueError("run .predict() first")
-        
+
         if self.need_to_store_results:
             parameter = self.params
-            
-            y=self.y
-            
-               
-           
-            x=self.x
-            proba=self.proba[:,:-1] if self.multiclass!="ovr" else self.proba
-            if param_if_not_kept is not None or y_if_not_kept is not None or  x_if_not_kept is not None :
+
+            y = self.y
+
+            x = self.x
+            proba = self.proba[:, :-1] if self.multiclass != "ovr" else self.proba
+            if (
+                param_if_not_kept is not None
+                or y_if_not_kept is not None
+                or x_if_not_kept is not None
+            ):
                 print("introduced param/y/x ignored, as we store results")
         else:
-            #correct it all here!!!!!!!!!!!!
+            # correct it all here!!!!!!!!!!!!
             parameter = param_if_not_kept
-            y=y_if_not_kept
-            
-            x=super().add_intercept_f(x_if_not_kept)
-            
+            y = y_if_not_kept
+
+            x = super().add_intercept_f(x_if_not_kept)
+
             linear_predictions = super().predict_linear(x_if_not_kept, parameter)
-            
-            
-            proba= self.__get_proba(linear_predictions)
-            
-                
-            
-            if param_if_not_kept is None or y_if_not_kept is  None or x_if_not_kept is  None:
+
+            proba = self.__get_proba(linear_predictions)
+
+            if (
+                param_if_not_kept is None
+                or y_if_not_kept is None
+                or x_if_not_kept is None
+            ):
                 raise ValueError(
                     "we dont store results, so you neeed to introduce param"
                 )
-     
+
         N = x.shape[0]
         p = x.shape[1]
 
-        if self.y.ndim==1:
-           LL = y.T @ x @ parameter- np.sum(
-               np.log(1 + np.exp(x @ parameter))
-           )
+        if self.y.ndim == 1:
+            LL = y.T @ x @ parameter - np.sum(np.log(1 + np.exp(x @ parameter)))
         else:
-            #positive cross entropy for OVR and softmax cases
-        
-            LL=np.sum(np.diag(y@np.log(proba.T)))#!!!!
-        
+            # positive cross entropy for OVR and softmax cases
+
+            LL = np.sum(np.diag(y @ np.log(proba.T)))  #!!!!
+
         AIC_ll = -2 * LL + 2 * (p)
         BIC_ll = -2 * LL + np.log(N) * (p)
-        
+
         criteria = {}
         criteria["LL"] = LL
         criteria["AIC_ll"] = AIC_ll
         criteria["BIC_ll"] = BIC_ll
-        
+
         if only_IC:
             return criteria
-        
-        
-        
-        
-        
-        #starting from here -> change to have good inference based on block matrices, finally validate with more classes but seems OK
-        nb_dimensions=1 if y.ndim==1 else y.shape[1]
-        
-        xx=block_diagonal(x,nb_dimensions)
-        
-        ww=block_prob_matrix(proba,nb_dimensions)
-        
-        #variance covariance matrix is inverse of hessian 
+
+        # starting from here -> change to have good inference based on block matrices, finally validate with more classes but seems OK
+        nb_dimensions = 1 if y.ndim == 1 else y.shape[1]
+
+        xx = block_diagonal(x, nb_dimensions)
+
+        ww = block_prob_matrix(proba, nb_dimensions)
+
+        # variance covariance matrix is inverse of hessian
         # print(np.diag((np.linalg.inv(xx.T@ww@xx))))
-        vector_std_errors=np.sqrt(np.diag((np.linalg.inv(xx.T@ww@xx))))
-       
-        #create data frame with coefficients
-        ft=True
-        nb_class=1 if parameter.ndim==1 else parameter.shape[1]
+        vector_std_errors = np.sqrt(np.diag((np.linalg.inv(xx.T @ ww @ xx))))
+
+        # create data frame with coefficients
+        ft = True
+        nb_class = 1 if parameter.ndim == 1 else parameter.shape[1]
         for i in range(nb_class):
             if ft:
-                stacked_params=parameter[:,i] if parameter.ndim>1 else parameter
-                ft=False
+                stacked_params = parameter[:, i] if parameter.ndim > 1 else parameter
+                ft = False
             else:
-                stacked_params=np.hstack((stacked_params,parameter[:,i]))
-        z_value=stacked_params/vector_std_errors
-        p_value=np.array([(2 * t.sf(np.abs(el), df=N - p)) for el in z_value])
-        p_value_star=np.array(["***" if p_value < 0.01 else "**" if p_value < 0.05 else "*" if p_value < 0.10 else "" for p_value in p_value])
-        odds_ratio=np.exp(stacked_params)
-        result=np.column_stack((np.round(stacked_params,decimals=4),np.round(vector_std_errors,decimals=2),np.round(z_value,decimals=2),np.round(p_value,decimals=3),p_value_star,np.round(odds_ratio,decimals=2)) )
-        result_column_names=["coef","std","z value","p value","p value star","odds ratio"]
-        
-        if ordered_columns_names!=None: 
+                stacked_params = np.hstack((stacked_params, parameter[:, i]))
+        z_value = stacked_params / vector_std_errors
+        p_value = np.array([(2 * t.sf(np.abs(el), df=N - p)) for el in z_value])
+        p_value_star = np.array(
+            [
+                (
+                    "***"
+                    if p_value < 0.01
+                    else "**" if p_value < 0.05 else "*" if p_value < 0.10 else ""
+                )
+                for p_value in p_value
+            ]
+        )
+        odds_ratio = np.exp(stacked_params)
+        result = np.column_stack(
+            (
+                np.round(stacked_params, decimals=4),
+                np.round(vector_std_errors, decimals=2),
+                np.round(z_value, decimals=2),
+                np.round(p_value, decimals=3),
+                p_value_star,
+                np.round(odds_ratio, decimals=2),
+            )
+        )
+        result_column_names = [
+            "coef",
+            "std",
+            "z value",
+            "p value",
+            "p value star",
+            "odds ratio",
+        ]
 
-            
-            ordered_columns_names=np.insert(ordered_columns_names, 0, "intercept") if self.add_intercept else ordered_columns_names
-        #attention! in ALL my work i work with labels 0,1,2,3 etc!!!another case is not accepted!! can be fixed, but i don't have time
-            if y.ndim==2:
-                #take all except for the last class which is the class of reference
-                classes_modeled=self.nb_unique_classes[0:len(self.nb_unique_classes)-1]
+        if ordered_columns_names != None:
+
+            ordered_columns_names = (
+                np.insert(ordered_columns_names, 0, "intercept")
+                if self.add_intercept
+                else ordered_columns_names
+            )
+            # attention! in ALL my work i work with labels 0,1,2,3 etc!!!another case is not accepted!! can be fixed, but i don't have time
+            if y.ndim == 2:
+                # take all except for the last class which is the class of reference
+                classes_modeled = self.nb_unique_classes[
+                    0 : len(self.nb_unique_classes) - 1
+                ]
             else:
-                classes_modeled=[1]
-                
-            ft=True
+                classes_modeled = [1]
+
+            ft = True
             for el in classes_modeled:
                 if ft:
-                    col_names=np.array([f"{col}_{el}" for col in ordered_columns_names])
-                   
-                    ft=False
+                    col_names = np.array(
+                        [f"{col}_{el}" for col in ordered_columns_names]
+                    )
+
+                    ft = False
                 else:
-                    col_names=np.hstack((col_names,np.array([f"{col}_{el}" for col in ordered_columns_names])))
-            ordered_columns_names=col_names   
-            
-        df = pd.DataFrame(result,index=ordered_columns_names,columns=result_column_names)
-        
-        
-        
-           
-        
+                    col_names = np.hstack(
+                        (
+                            col_names,
+                            np.array([f"{col}_{el}" for col in ordered_columns_names]),
+                        )
+                    )
+            ordered_columns_names = col_names
+
+        df = pd.DataFrame(
+            result, index=ordered_columns_names, columns=result_column_names
+        )
+
         if self.need_to_store_results:
             self.criteria = criteria
         # calculate variance covariance matrix and p values of parameters
@@ -438,40 +479,36 @@ class LogisticRegression(BaseEstimator):
         #     columns=["params", "std", "t value", "p value"],
         # )
         return df
-    
-    
+
     def autoselection(
         self,
         method: Literal["backward", "forward", "stepwise"],
         criterion: Literal[
             "BIC_ll",
             "AIC_ll",
-          
             "LL",
         ] = "BIC_ll",
-        print_message: bool=True
-    )->np.ndarray:
-        
+        print_message: bool = True,
+    ) -> np.ndarray:
         """
         Perform automatic variable selection for the model.
-    
+
         Parameters:
             method (str): The method to use for variable selection. It can be one of: "backward", "forward", or "stepwise".
             criterion (str, optional): The criterion to use for variable selection.
                 Options include: "BIC_ll", "AIC_ll", "AIC_err", "BIC_err", or "LL".
                 Defaults to "BIC_ll".
-    
+
         Returns:
             np.ndarray: An array containing the indices of the selected variables.
-    
+
         Raises:
             ValueError: If the model has not been fitted (i.e., if `x` or `y` is None).
-    
+
         Note:
             This method assumes that the model has already been fitted. It uses the provided method
             and criterion to perform automatic variable selection and returns the indices of the selected variables.
         """
-        
-        
-        result=super().autoselection(method,criterion,print_message)
+
+        result = super().autoselection(method, criterion, print_message)
         return result

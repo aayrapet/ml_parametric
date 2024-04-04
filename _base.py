@@ -91,7 +91,7 @@ class GradientDescent:
         mini_batch_size,
         x,
         y,
-        print_message: bool = True
+        print_message: bool = True,
     ):
 
         self.regression = regression
@@ -104,7 +104,7 @@ class GradientDescent:
         self.newton_raphson = False
         self.change = float("inf")
         self.max_iteration = max_iteration
-        self.print_message=print_message
+        self.print_message = print_message
 
     def optimiser_update_parameter(self, B, x, y):
         """
@@ -135,25 +135,37 @@ class GradientDescent:
         if self.regression == "linear":
             prediction = x @ B
             gradient = (2 * (y - prediction)).T @ x
-            
+
         elif self.regression == "logistic":
-            
+
             linear_predictions = x @ B
-         
+
             numerator = np.exp(linear_predictions)
-                        
+
             denominator = np.zeros(linear_predictions.shape[0])
-            nb_cols=linear_predictions.shape[1] if linear_predictions.ndim>1 else linear_predictions.ndim
-            
+            nb_cols = (
+                linear_predictions.shape[1]
+                if linear_predictions.ndim > 1
+                else linear_predictions.ndim
+            )
+
             for i in range(nb_cols):
-                denominator = denominator + numerator[:, i] if linear_predictions.ndim>1 else denominator + numerator
-            denominator=denominator+np.exp(0)#we add reference class
-            denominator = np.column_stack([denominator] * linear_predictions.shape[1])  if linear_predictions.ndim>1  else denominator
-            
-            proba = numerator / denominator #if linear_predictions.ndim>1  else np.array([list(num_el/den_el) for num_el, den_el in zip( numerator,denominator)])
-            
-           
-            
+                denominator = (
+                    denominator + numerator[:, i]
+                    if linear_predictions.ndim > 1
+                    else denominator + numerator
+                )
+            denominator = denominator + np.exp(0)  # we add reference class
+            denominator = (
+                np.column_stack([denominator] * linear_predictions.shape[1])
+                if linear_predictions.ndim > 1
+                else denominator
+            )
+
+            proba = (
+                numerator / denominator
+            )  # if linear_predictions.ndim>1  else np.array([list(num_el/den_el) for num_el, den_el in zip( numerator,denominator)])
+
             # for i in range(lin_y.shape[1]):
             #     denominator = denominator + numerator[:, i]
             # denominator=denominator+np.exp(0)
@@ -161,34 +173,32 @@ class GradientDescent:
 
             # prediction = numerator / denominator
             gradient = x.T @ (y - proba)
-            
-          
+
         # if self.newton_raphson and self.regression == "logistic softmax":
         #     raise ValueError("not done yet,incoming")
 
         # If learn_rate is an scalar (GD)
         if not self.newton_raphson:
-            
+
             B = B + self.learning_rate * gradient
 
         # If learn_rate is an inverse of hessian (NR)
         elif self.newton_raphson:
-            if  self.regression=="logistic":
-                
-                nb_dimensions=1 if y.ndim==1 else y.shape[1]
-                #error
-                if nb_dimensions>1:
-                    raise ValueError('Newton Raphson for multinomial logit is not ready')
-                xx=block_diagonal(x,nb_dimensions)
-                if proba.ndim==1:
-                    proba=proba.reshape(proba.shape[0],1)
-                ww=block_prob_matrix(proba,nb_dimensions)
-                
+            if self.regression == "logistic":
+
+                nb_dimensions = 1 if y.ndim == 1 else y.shape[1]
+                # error
+                if nb_dimensions > 1:
+                    raise ValueError(
+                        "Newton Raphson for multinomial logit is not ready"
+                    )
+                xx = block_diagonal(x, nb_dimensions)
+                if proba.ndim == 1:
+                    proba = proba.reshape(proba.shape[0], 1)
+                ww = block_prob_matrix(proba, nb_dimensions)
+
                 self.learning_rate = np.linalg.inv(xx.T @ ww @ xx)
-                
-                
-                
-                
+
             B = B + self.learning_rate @ gradient
 
         change = np.sum((B - B_old) ** 2)
@@ -226,7 +236,7 @@ class GradientDescent:
         if iteration < local_max_iter:
             if self.change < self.tol_level:
                 self.stop_loop = True
-                
+
                 print(message_good) if self.print_message else None
         # on the final iteration
         elif iteration == local_max_iter:
@@ -283,16 +293,13 @@ class GradientDescent:
         p = self.x.shape[1]
         if self.regression == "logistic":
             # B = np.zeros((self.x.shape[1], self.y.shape[1]))
-            
-            
-            
-            
-            if self.y.ndim==1:
-                B=np.zeros((self.x.shape[1]))
+
+            if self.y.ndim == 1:
+                B = np.zeros((self.x.shape[1]))
             else:
-                B = np.zeros((self.x.shape[1],self.y.shape[1]))
-        elif self.regression =="linear":
-                B=np.zeros((self.x.shape[1]))
+                B = np.zeros((self.x.shape[1], self.y.shape[1]))
+        elif self.regression == "linear":
+            B = np.zeros((self.x.shape[1]))
         with warnings.catch_warnings(record=True) as w:
             # Vanilla gradient descent (or batch gradient descent)
             if not stochastic:
@@ -395,7 +402,7 @@ class BaseEstimator:
         max_iteration: int = 100,
         mini_batch_size: int = 32,
         need_to_store_results: bool = True,
-        print_message : bool = True
+        print_message: bool = True,
     ):
 
         # define mandatory field:
@@ -407,7 +414,7 @@ class BaseEstimator:
         self.max_iteration = max_iteration
         self.mini_batch_size = mini_batch_size
         self.need_to_store_results = need_to_store_results
-        self.print_message=print_message
+        self.print_message = print_message
         # define  fields that will be calculated after:
         self.predictions = "not calculated yet"
         self.params = "not calculated yet"
@@ -459,7 +466,7 @@ class BaseEstimator:
             self.mini_batch_size,
             x,
             y,
-            self.print_message
+            self.print_message,
         )
         result_param = alg.optimiser_algorithm_classic()
         if self.need_to_store_results:
@@ -498,7 +505,7 @@ class BaseEstimator:
 
         # add intercept (or not)
         x = self.add_intercept_f(x)
-      
+
         pred = x @ parameter
 
         return pred
@@ -513,108 +520,104 @@ class BaseEstimator:
             "BIC_err",
             "LL",
         ] = "BIC_ll",
-        print_message: bool=True
-    )->np.ndarray:
-        
-        
+        print_message: bool = True,
+    ) -> np.ndarray:
         """
         Perform automatic variable selection for the model.
-    
+
         Parameters:
             method (str): The method to use for variable selection. It can be one of: "backward", "forward", or "stepwise".
             criterion (str, optional): The criterion to use for variable selection.
                 Options include: "BIC_ll", "AIC_ll", "AIC_err", "BIC_err", or "LL".
                 Defaults to "BIC_ll".
-    
+
         Returns:
             np.ndarray: An array containing the indices of the selected variables.
-    
+
         Raises:
             ValueError: If the model has not been fitted (i.e., if `x` or `y` is None).
-    
+
         Note:
             This method assumes that the model has already been fitted. It uses the provided method
             and criterion to perform automatic variable selection and returns the indices of the selected variables.
         """
-        self.print_message=print_message
+        self.print_message = print_message
         if self.x is None or self.y is None:
             raise ValueError("fit the model first, then do autoselect")
         if self.add_intercept:
-            x=self.x[:,1:]
+            x = self.x[:, 1:]
         else:
-            x=self.x
-            
-            
+            x = self.x
+
         sel = AutoSelect(self, method, criterion)
-        index_selected_variables=sel.fit(x, self.y)
-        #get back print option 
-        self.print_message=True
+        index_selected_variables = sel.fit(x, self.y)
+        # get back print option
+        self.print_message = True
         return index_selected_variables
 
 
+def block_diagonal(matrix, nb_blocks):
+    """
+    Duplicates matrix X n times on  a diagonal to get a diagonal block matrix, other blocks being 0
+
+    """
+    N, p = matrix.shape
+    block = np.zeros((N * nb_blocks, p * nb_blocks))
+
+    for i in range(nb_blocks):
+        block[i * N : N * (i + 1), i * p : p * (i + 1)] = matrix
+    return block
 
 
+def block_prob_matrix(matrix, nb_blocks):
+    """
+    Get block matrix of probabilities.
+    On diagonal terms we get diagonal matrices Pki*(1-Pki) .... P(k-1)i*(1-P(k-1)i)
+    On other terms we get diagonal matrices Pki*Pli .... P(k-1)i*(P(l-1)i)
+
+    Returns
+    ------
+
+    Probability matrix W
+
+    References
+    --------
+
+    To visualise go to : https://github.com/aayrapet/ml_parametric/issues/1
 
 
-def block_diagonal(matrix,nb_blocks):
-      """ 
-      Duplicates matrix X n times on  a diagonal to get a diagonal block matrix, other blocks being 0
-      
-      """
-      N,p=matrix.shape  
-      block=np.zeros((N*nb_blocks,p*nb_blocks))
-      
-      for i in range(nb_blocks):
-        block[i*N:N*(i+1),i*p:p*(i+1)]=matrix
-      return block
-  
-    
-def block_prob_matrix(matrix,nb_blocks):
-       """ 
-       Get block matrix of probabilities. 
-       On diagonal terms we get diagonal matrices Pki*(1-Pki) .... P(k-1)i*(1-P(k-1)i)
-       On other terms we get diagonal matrices Pki*Pli .... P(k-1)i*(P(l-1)i)
-       
-       Returns
-       ------
-       
-       Probability matrix W
-       
-       References
-       --------
-       
-       To visualise go to : https://github.com/aayrapet/ml_parametric/issues/1
-       
-       
-       """
-       
-       size_block=matrix.shape[0]
-        
-       list_values=list(range(nb_blocks))
-       all_combinations=list(product(list_values, repeat=2))
-       
-       nb=len(list_values)
-       
-       W=np.zeros((nb*size_block,nb*size_block))
-       i=-1
-       
-       el_old=[100]
-       for el in all_combinations:
-          
-           if el_old[0]==el[0]:
-               j=j+1
-           else:
-               #go on the next line
-               j=0
-               i=i+1
-           
-           #block is respective probabilities matrix that will be injected as diagonal matrix
-           if el[0]==el[1]:
-               block=matrix[:,el[0]]*(1-matrix[:,el[0]])
-           else:
-               block=(-1)*matrix[:,el[0]]*(matrix[:,el[1]])
-               
-           W[el[0]*size_block :size_block*(i+1 ) ,el[1]*size_block :size_block*(j+1)]=np.diag(block)
-           el_old=el
-           
-       return((W))
+    """
+
+    size_block = matrix.shape[0]
+
+    list_values = list(range(nb_blocks))
+    all_combinations = list(product(list_values, repeat=2))
+
+    nb = len(list_values)
+
+    W = np.zeros((nb * size_block, nb * size_block))
+    i = -1
+
+    el_old = [100]
+    for el in all_combinations:
+
+        if el_old[0] == el[0]:
+            j = j + 1
+        else:
+            # go on the next line
+            j = 0
+            i = i + 1
+
+        # block is respective probabilities matrix that will be injected as diagonal matrix
+        if el[0] == el[1]:
+            block = matrix[:, el[0]] * (1 - matrix[:, el[0]])
+        else:
+            block = (-1) * matrix[:, el[0]] * (matrix[:, el[1]])
+
+        W[
+            el[0] * size_block : size_block * (i + 1),
+            el[1] * size_block : size_block * (j + 1),
+        ] = np.diag(block)
+        el_old = el
+
+    return W

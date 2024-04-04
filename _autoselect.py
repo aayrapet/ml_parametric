@@ -12,7 +12,6 @@ from typing import Literal
 import _err_handl as erh
 
 
-
 class AutoSelect:
     def __init__(
         self,
@@ -24,59 +23,56 @@ class AutoSelect:
             "AIC_err",
             "BIC_err",
             "LL",
-        ] = "BIC_ll"
-    ):  
+        ] = "BIC_ll",
+    ):
         """
         Initializes an AutoSelect object.
 
         Parameters:
         ----
             Class_algorithm (Type): The type of the algorithm class to be used.
-            method (Literal["backward", "forward", "stepwise"]): The selection method to be used. 
+            method (Literal["backward", "forward", "stepwise"]): The selection method to be used.
                 It can be one of the following: "backward", "forward", or "stepwise".
             inf_criterion (Literal["BIC_ll", "AIC_ll", "AIC_err", "BIC_err", "LL"], optional):
-                The information criterion to be used for model selection. 
+                The information criterion to be used for model selection.
                 Default is "BIC_ll".
 
         Backward Regression:
         ---
 
-        In backward regression, you start with all the predictors (independent variables) included in the model, 
-        and then iteratively remove the least significant predictor one at a time until a stopping criterion is met. 
-        This stopping criterion is often based on statistical tests like p-values or information criteria such as AIC 
-        (Akaike Information Criterion) or BIC (Bayesian Information Criterion). 
+        In backward regression, you start with all the predictors (independent variables) included in the model,
+        and then iteratively remove the least significant predictor one at a time until a stopping criterion is met.
+        This stopping criterion is often based on statistical tests like p-values or information criteria such as AIC
+        (Akaike Information Criterion) or BIC (Bayesian Information Criterion).
         Backward regression is beneficial when dealing with a large number of predictors and you want to simplify the model by removing irrelevant variables.
-        
+
         Forward Regression:
         -----
 
         Unlike backward regression, forward regression starts with an empty model and iteratively adds the most significant
-        predictor one at a time until a stopping criterion is met. Similar to backward regression, the stopping criterion 
-        is often based on statistical tests or information criteria. Forward regression is useful when you have a large pool 
+        predictor one at a time until a stopping criterion is met. Similar to backward regression, the stopping criterion
+        is often based on statistical tests or information criteria. Forward regression is useful when you have a large pool
         of potential predictors and you want to identify the most relevant variables for your model.
-        
+
         Stepwise Regression:
         -------
         Stepwise regression  combines aspects of both backward and forward regression.
         It starts with an empty model and at each step, it either adds or removes a predictor based on predefined criteria.
-       
+
         """
-        #check that data types are good 
-        erh.check_arguments_data((method,str),(inf_criterion,str))
-        
-        
+        # check that data types are good
+        erh.check_arguments_data((method, str), (inf_criterion, str))
+
         if method not in ["backward", "forward", "stepwise"]:
             raise ValueError("no known methods detected")
-        if inf_criterion not in [ "BIC_ll",  "AIC_ll", "AIC_err","BIC_err","LL"]:
+        if inf_criterion not in ["BIC_ll", "AIC_ll", "AIC_err", "BIC_err", "LL"]:
             raise ValueError("no known criteria detected")
         # if isinstance(Class_algorithm,LogisticRegression) and inf_criterion in ["AIC_err","BIC_err"]:
         #     raise ValueError("for Logistic regression, IC can't be calculated using errors")
-        
-        self.Class_algorithm=Class_algorithm
+
+        self.Class_algorithm = Class_algorithm
         self.method = method
         self.inf_criterion = inf_criterion
-        
-        
 
     @staticmethod
     def is_decrease(vector: list) -> bool:
@@ -118,14 +114,10 @@ class AutoSelect:
                 new_index.append(vector[i])
         return new_index
 
-
-  
-    
-    def forward_selection( self,
-       
+    def forward_selection(
+        self,
         x: np.ndarray,
         y: np.ndarray,
-        
     ) -> np.ndarray:
         """
         Forward selection Algorithm
@@ -134,7 +126,7 @@ class AutoSelect:
 
         Parameters
         ------
-        
+
         x (array alike) : matrix of x variables
         y (array alike) : vector of y
         criterion (str) : Information criterion (IC) that is a stopping criterion that stops
@@ -148,9 +140,8 @@ class AutoSelect:
 
 
         """
-        #turn of storing results 
-        self.Class_algorithm.need_to_store_results=False
-       
+        # turn of storing results
+        self.Class_algorithm.need_to_store_results = False
 
         index = np.array([i for i in range(x.shape[1])])
 
@@ -169,17 +160,17 @@ class AutoSelect:
                 final_index = np.hstack((final_index, index_found))
 
             min_aic = []
-            if len(index)!=0:
+            if len(index) != 0:
                 for i in range(len(index)):
                     new_index = np.hstack((final_index, index[i]))
-               
-                    #run model on selected set of variables
+
+                    # run model on selected set of variables
                     parameter = self.Class_algorithm.fit(x[:, new_index], y)
-                    
+
                     criteria = self.Class_algorithm.get_inference(
-                        #only calculate IC
+                        # only calculate IC
                         only_IC=True,
-                        #as we dont store parameters/x/y, introduce them in arguments!!
+                        # as we dont store parameters/x/y, introduce them in arguments!!
                         param_if_not_kept=parameter,
                         y_if_not_kept=y,
                         x_if_not_kept=x[:, new_index],
@@ -187,14 +178,14 @@ class AutoSelect:
                     this_criterion = criteria[self.inf_criterion]
                     min_aic.append(this_criterion)
                 # find position of minimal IC over these models
-              
+
                 index_min = np.argmin(min_aic)
                 index_found = index[index_min]
                 # add minimal IC to the IC list, so that we can compare two last IC
-                min_aic_global.append(min(min_aic))  
+                min_aic_global.append(min(min_aic))
             else:
-               break
-              
+                break
+
         # set this parameter back to true so the user will be able to store results in attributes
         self.Class_algorithm.need_to_store_results = True
 
@@ -202,11 +193,8 @@ class AutoSelect:
 
     def backward_selection(
         self,
-       
         x: np.ndarray,
         y: np.ndarray,
-        
-       
     ) -> np.ndarray:
         """
         Backward selection Algorithm
@@ -215,7 +203,7 @@ class AutoSelect:
 
         Parameters
         ------
-        
+
         x (array alike) : matrix of x variables
         y (array alike) : vector of y
         criterion (str) : Information criterion (IC) that is a stopping criterion that stops
@@ -229,7 +217,7 @@ class AutoSelect:
 
 
         """
-       
+
         # make sure that during code excecution we dont store the process of this function
         self.Class_algorithm.need_to_store_results = False
         index = np.array([i for i in range(x.shape[1])])
@@ -253,12 +241,12 @@ class AutoSelect:
                     first_time = False
                 else:
                     new_index = self.delete_i_from_index(index[i], index)
-                #run model on selected vaiables of x 
+                # run model on selected vaiables of x
                 parameter = self.Class_algorithm.fit(x[:, new_index], y)
                 criteria = self.Class_algorithm.get_inference(
-                    #only calculate IC
+                    # only calculate IC
                     only_IC=True,
-                    #as we dont store parameters/x/y, introduce them in arguments!!
+                    # as we dont store parameters/x/y, introduce them in arguments!!
                     param_if_not_kept=parameter,
                     y_if_not_kept=y,
                     x_if_not_kept=x[:, new_index],
@@ -279,10 +267,8 @@ class AutoSelect:
 
     def stepwise_selection(
         self,
-       
         x: np.ndarray,
         y: np.ndarray,
-        
     ) -> np.ndarray:
         """
         Stepwise selection Algorithm
@@ -316,7 +302,7 @@ class AutoSelect:
 
 
         """
-       
+
         # make sure that during code excecution we dont store the process of this function
 
         self.Class_algorithm.need_to_store_results = False
@@ -357,9 +343,9 @@ class AutoSelect:
 
                     parameter = self.Class_algorithm.fit(x[:, new_index], y)
                     criteria = self.Class_algorithm.get_inference(
-                        #only calculate IC
+                        # only calculate IC
                         only_IC=True,
-                        #as we dont store parameters/x/y, introduce them in arguments!!
+                        # as we dont store parameters/x/y, introduce them in arguments!!
                         param_if_not_kept=parameter,
                         y_if_not_kept=y,
                         x_if_not_kept=x[:, new_index],
@@ -391,9 +377,9 @@ class AutoSelect:
 
                     parameter = self.Class_algorithm.fit(x[:, new_index], y)
                     criteria = self.Class_algorithm.get_inference(
-                        #only calculate IC
+                        # only calculate IC
                         only_IC=True,
-                        #as we dont store parameters/x/y, introduce them in arguments!!
+                        # as we dont store parameters/x/y, introduce them in arguments!!
                         param_if_not_kept=parameter,
                         y_if_not_kept=y,
                         x_if_not_kept=x[:, new_index],
@@ -417,41 +403,35 @@ class AutoSelect:
 
         self.Class_algorithm.need_to_store_results = True
         return np.array(index)
-    
-    def fit(self,x: np.ndarray, y: np.ndarray)->np.ndarray:
-        
-        """  
+
+    def fit(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
+        """
         Fit Backward/Forward/Stepwise regressions
-        
+
         Parameters
         -----
-        
-        x (array_like) : maxtrix x 
-        
+
+        x (array_like) : maxtrix x
+
         y (array_like) : vector of target y variable
-        
-        
+
+
         Returns
         ------
-        
+
         Array of indexes of x matrix
-        
+
         """
-         # check that introduced variables are of good type
+        # check that introduced variables are of good type
         erh.check_arguments_data(
-           
             (x, np.ndarray),
             (y, np.ndarray),
-          
         )
-        
-        if self.method=="backward":
-            res=self.backward_selection(x,y)
-        elif self.method=="forward":
-            res=self.forward_selection(x,y)
-        elif self.method=="stepwise":
-            res=self.stepwise_selection(x,y)
+
+        if self.method == "backward":
+            res = self.backward_selection(x, y)
+        elif self.method == "forward":
+            res = self.forward_selection(x, y)
+        elif self.method == "stepwise":
+            res = self.stepwise_selection(x, y)
         return res
-            
-    
-    
