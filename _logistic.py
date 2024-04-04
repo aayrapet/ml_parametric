@@ -130,15 +130,7 @@ class LogisticRegression(BaseEstimator):
 
             result_param = super().fit_base(x, y, "logistic")
 
-        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        # dont use ovr for the moment, maybe we have to do ovr with original manner? or maybe not? TEST!!!!
-        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+   
         elif self.multiclass == "ovr":
             ft = True
             for class_y in y.T:
@@ -153,8 +145,6 @@ class LogisticRegression(BaseEstimator):
 
         if self.need_to_store_results:
             self.params = result_param
-
-            # HERE PRIORITY 1
             self.y = y
 
         return result_param
@@ -470,14 +460,7 @@ class LogisticRegression(BaseEstimator):
 
         if self.need_to_store_results:
             self.criteria = criteria
-        # calculate variance covariance matrix and p values of parameters
-
-        # t_value = self.params / std_params
-        # p_value = [(2 * t.sf(np.abs(el), df=N - p)) for el in t_value]
-        # result = pd.DataFrame(
-        #     np.column_stack((self.params, std_params, t_value, np.round(p_value, 4))),
-        #     columns=["params", "std", "t value", "p value"],
-        # )
+       
         return df
 
     def autoselection(
