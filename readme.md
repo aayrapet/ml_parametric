@@ -2,15 +2,20 @@
 
 In this project, the aim is to develop parametric models using only math and NumPy. The project is organized into the following modules:
 
+
+    
+
 ## Modules
 
-- **base**: Contains the Gradient Descent optimizer, which includes classic Gradient Descent for Generalized Linear Models. It also has extensions such as stochastic gradient descent and Newton-Raphson. Additionally, this module stores `BaseEstimator`, which serves as the base estimator for GLM, such as Linear Regression and Logistic Regression.
+- **base**: Contains the `GradientDescent` optimizer, which includes classic Gradient Descent for Generalized Linear Models. It also has extensions such as stochastic gradient descent and Newton-Raphson. Additionally, this module stores `BaseEstimator`, which serves as the base estimator for GLM, such as Linear Regression and Logistic Regression.
 
-- **linear**: Stores the Linear Regression model.
+- **linear**: Stores the `LinearRegression` model.  
 
-- **logistic**: Stores the Logistic Regression model.
+- **logistic**: Stores the `LogisticRegression` model:
+  - Softmax function (generalisation of sigmoid function)
+  - One vs Rest algorithm
 
-- **autoselect**: Stores the Autoselection of variables class. It selects variables using information Criteria defined by user. It has three oprions: backward, forward and stepwise regressions
+- **autoselect**: Stores the `Autoselection` of variables class. It selects variables using information Criteria defined by user. It has three oprions: backward, forward and stepwise regressions
 
 - **metrics**: Stores various metrics used for:
 
