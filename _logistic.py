@@ -454,7 +454,7 @@ class LogisticRegression(BaseEstimator):
                         )
                     )
             ordered_columns_names = col_names
-
+           
         df = pd.DataFrame(
             result, index=ordered_columns_names, columns=result_column_names
         )

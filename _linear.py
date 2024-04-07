@@ -210,6 +210,7 @@ class LinearRegression(BaseEstimator):
         erh.check_arguments_data((biased, bool),(only_IC,bool))
         # better to pass predictions to attributes
         SCR = np.sum((y - (x @ parameter)) ** 2, axis=0)
+     
         N = x.shape[0]
         p = x.shape[1]
         variance = SCR / N if biased else SCR / (N - p)
@@ -234,8 +235,11 @@ class LinearRegression(BaseEstimator):
         vcov_matrix = variance * np.linalg.inv(x.T @ x)
         
         std_params = np.sqrt(np.diagonal(vcov_matrix))
+       
         t_value = parameter/ std_params
-        p_value = [(2 * t.sf(np.abs(el), df=N - p)) for el in t_value]
+        p_value = np.array([(2 * t.sf(np.abs(el), df=N - p)) for el in t_value])
+        
+    
         result = pd.DataFrame(
             np.column_stack((self.params, std_params, t_value, np.round(p_value, 4))),
             columns=["params", "std", "t value", "p value"],

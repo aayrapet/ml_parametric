@@ -130,7 +130,7 @@ class GradientDescent:
             The updated parameter vector.
 
         """
-        B_old = B.copy()
+        
 
         if self.regression == "linear":
             prediction = x @ B
@@ -139,72 +139,86 @@ class GradientDescent:
         elif self.regression == "logistic":
 
             linear_predictions = x @ B
+            #modif1
+            # numerator = np.exp(linear_predictions)
 
-            numerator = np.exp(linear_predictions)
+            # denominator = np.zeros(linear_predictions.shape[0])
+            # nb_cols = (
+            #     linear_predictions.shape[1]
+            #     if linear_predictions.ndim > 1
+            #     else linear_predictions.ndim
+            # )
 
-            denominator = np.zeros(linear_predictions.shape[0])
-            nb_cols = (
-                linear_predictions.shape[1]
-                if linear_predictions.ndim > 1
-                else linear_predictions.ndim
-            )
+            # for i in range(nb_cols):
+            #     denominator = (
+            #         denominator + numerator[:, i]
+            #         if linear_predictions.ndim > 1
+            #         else denominator + numerator
+            #     )
+            # denominator = denominator + np.exp(0)  # we add reference class
+            # denominator = (
+            #     np.column_stack([denominator] * linear_predictions.shape[1])
+            #     if linear_predictions.ndim > 1
+            #     else denominator
+            # )
 
-            for i in range(nb_cols):
-                denominator = (
-                    denominator + numerator[:, i]
-                    if linear_predictions.ndim > 1
-                    else denominator + numerator
-                )
-            denominator = denominator + np.exp(0)  # we add reference class
-            denominator = (
-                np.column_stack([denominator] * linear_predictions.shape[1])
-                if linear_predictions.ndim > 1
-                else denominator
-            )
-
-            proba = (
-                numerator / denominator
-            )  # if linear_predictions.ndim>1  else np.array([list(num_el/den_el) for num_el, den_el in zip( numerator,denominator)])
-
-            # for i in range(lin_y.shape[1]):
-            #     denominator = denominator + numerator[:, i]
-            # denominator=denominator+np.exp(0)
-            # denominator = np.column_stack([denominator] * lin_y.shape[1])
-
-            # prediction = numerator / denominator
+            # proba = (
+            #     numerator / denominator
+            # )
+            
+            
+            #SOFTMAX FUNCTION to calculate probability 
+            #here i simplify the code with numpy functions
+            P=np.exp(linear_predictions)
+            
+            norms = np.diag(1/(P.sum(1)+1))
+            
+            proba = norms@P
+            
             gradient = x.T @ (y - proba)
-
+            
+            #adjust gradient
+            ##MODIFIMPORTANT1
+            
+            gradient=gradient.T.reshape((gradient.shape[0]*gradient.shape[1],1))
+           
+        
+           
         # if self.newton_raphson and self.regression == "logistic softmax":
         #     raise ValueError("not done yet,incoming")
 
+        
+        #MODIFIMPORTANT2
+        if self.regression=="logistic":
+            B=B.T.reshape((B.shape[0]*B.shape[1],1))
         # If learn_rate is an scalar (GD)
         if not self.newton_raphson:
-
-            B = B + self.learning_rate * gradient
+            
+            B_new = B + self.learning_rate * gradient
 
         # If learn_rate is an inverse of hessian (NR)
         elif self.newton_raphson:
             if self.regression == "logistic":
 
                 nb_dimensions = 1 if y.ndim == 1 else y.shape[1]
-                # error
-                if nb_dimensions > 1:
-                    raise ValueError(
-                        "Newton Raphson for multinomial logit is not ready"
-                    )
+                
                 xx = block_diagonal(x, nb_dimensions)
                 if proba.ndim == 1:
                     proba = proba.reshape(proba.shape[0], 1)
                 ww = block_prob_matrix(proba, nb_dimensions)
 
                 self.learning_rate = np.linalg.inv(xx.T @ ww @ xx)
+           
+            
+          
+                        
+            B_new = B + self.learning_rate @ gradient
 
-            B = B + self.learning_rate @ gradient
-
-        change = np.sum((B - B_old) ** 2)
+        change = np.sum((B - B_new) ** 2)
+        B = B_new.copy()
         self.change = change
 
-        return B
+        return B_new
 
     def optimiser_verify_condition(self, iteration, local_max_iter):
         """
@@ -292,19 +306,30 @@ class GradientDescent:
             return B
         p = self.x.shape[1]
         if self.regression == "logistic":
-            # B = np.zeros((self.x.shape[1], self.y.shape[1]))
-
+            
+           
             if self.y.ndim == 1:
-                B = np.zeros((self.x.shape[1]))
+                
+                B = np.zeros((self.x.shape[1],1)) #modif2
+                self.y=self.y.reshape((self.y.shape[0],1))#modif3
             else:
                 B = np.zeros((self.x.shape[1], self.y.shape[1]))
+         
         elif self.regression == "linear":
             B = np.zeros((self.x.shape[1]))
         with warnings.catch_warnings(record=True) as w:
             # Vanilla gradient descent (or batch gradient descent)
             if not stochastic:
                 local_max_iter = self.max_iteration
+                ft=True
                 for i in range(1, self.max_iteration + 1):
+                    #MODIFIMPORTANT3
+                    if self.regression=="logistic":
+                      if ft:
+                          ft=False
+                      else: 
+                          B=np.reshape(B, (-1, (self.y.shape[1])), order='F')
+                        
                     B = self.optimiser_update_parameter(B, self.x, self.y)
                     self.optimiser_verify_condition(i, local_max_iter)
                     if self.stop_loop:
@@ -315,6 +340,7 @@ class GradientDescent:
                 iteration = 1
                 N = self.x.shape[0]
                 number = mt.ceil(N / self.mini_batch_size)
+                ft=True
                 for j in range(1, self.max_iteration + 1):
                     indices = np.random.permutation(N)
                     x = self.x[indices]
@@ -323,6 +349,11 @@ class GradientDescent:
                     for i in range(0, N, self.mini_batch_size):
                         x_batch = x[i : i + self.mini_batch_size]
                         y_batch = y[i : i + self.mini_batch_size]
+                        if self.regression=="logistic":
+                          if ft:
+                              ft=False
+                          else: 
+                              B=np.reshape(B, (-1, (self.y.shape[1])), order='F')
                         B = self.optimiser_update_parameter(B, x_batch, y_batch)
                         self.optimiser_verify_condition(
                             iteration, local_max_iter * number
@@ -469,6 +500,13 @@ class BaseEstimator:
             self.print_message,
         )
         result_param = alg.optimiser_algorithm_classic()
+        if methodic=="logistic":
+           if y.ndim==1: 
+               nb_classes_1=1
+           else:
+               nb_classes_1=y.shape[1]
+           result_param=np.reshape(result_param, (-1, (nb_classes_1)), order='F')
+        
         if self.need_to_store_results:
             self.params = result_param
             self.x = x
