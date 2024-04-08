@@ -15,7 +15,7 @@ In this project, the aim is to develop parametric models using only math and Num
   - Softmax function (generalisation of sigmoid function)
   - One vs Rest algorithm
 
-- **autoselect**: Stores the `Autoselection` of variables class. It selects variables using information Criteria defined by user. It has three oprions: backward, forward and stepwise regressions
+- **autoselect**: Stores the `Autoselection` of variables class. It selects variables using information Criteria defined by user. It has three options: backward, forward and stepwise regressions
 
 - **metrics**: Stores various metrics used for:
 
@@ -33,13 +33,13 @@ In this project, the aim is to develop parametric models using only math and Num
 
 - **err_handl**: Manages errors within the modules.
 
-- **dgp**: Generates data with different characteristics used for linear regression.
+- **dgp**: Generates data with different characteristics used for linear regression and logistic regression
 
-- **data**: Example data for linear and logistic regressions.
+
 
 ## Testing
 
-All the work is thoroughly tested and summarized in the test notebook. This notebook executes, tests, and evaluates both models.
+All the work is thoroughly tested and summarized in the notebook folder. These notebooks execute, test, and evaluate GLM models.
 
 
 
