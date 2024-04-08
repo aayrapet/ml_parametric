@@ -114,6 +114,30 @@ class LinearRegression(BaseEstimator):
         result_param = super().fit_base(x, y, "linear")
 
         return result_param
+    
+    def fit_elnet(self, x: np.ndarray, y: np.ndarray,alpha : float=None, lambd: float =None,
+                  for_inference_lasso_params: bool=False) -> np.ndarray:
+        
+        erh.check_arguments_data((x, np.ndarray), (y, np.ndarray))
+        
+        result_param_regul = super().fit_base(x, y, "linear",alpha,lambd)
+        index_non_zero=np.nonzero(result_param_regul)
+        
+        if for_inference_lasso_params:
+            self.need_to_store_results=False
+        result_param=super().fit_base(x, y, "linear")
+        if for_inference_lasso_params ==False:
+            self.params=result_param[index_non_zero]
+        elif for_inference_lasso_params:
+            self.need_to_store_results=True
+            
+        
+        
+        #return both vectors -> why? used for model comparison, Lasso selects variables 
+        # then on these variables we run Linear regression and get Information criteria
+        #and other statistics
+        return result_param[index_non_zero],result_param_regul
+
 
     def predict(
         self, x: np.ndarray, param_if_not_kept: np.ndarray = None, 

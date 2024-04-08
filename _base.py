@@ -83,7 +83,7 @@ class GradientDescent:
 
     def __init__(
         self,
-        regression: Literal["linear", "logistic", "logistic softmax"],
+        regression: Literal["linear", "logistic"],
         solver,
         learning_rate,
         tol_level,
@@ -92,6 +92,8 @@ class GradientDescent:
         x,
         y,
         print_message: bool = True,
+        alpha: float=None,
+        lambd : float =None
     ):
 
         self.regression = regression
@@ -105,6 +107,8 @@ class GradientDescent:
         self.change = float("inf")
         self.max_iteration = max_iteration
         self.print_message = print_message
+        self.alpha=alpha
+        self.lamdb=lambd
 
     def optimiser_update_parameter(self, B, x, y):
         """
@@ -292,7 +296,9 @@ class GradientDescent:
         """
 
         self.stop_loop = False
-        if self.solver == "nr":
+        if self.lamdb!=None or self.alpha!=None:
+            pass
+        elif self.solver == "nr":
             self.newton_raphson = True
             if self.regression == "linear":
                 self.learning_rate = np.linalg.inv(2 * self.x.T @ self.x)
@@ -318,8 +324,37 @@ class GradientDescent:
         elif self.regression == "linear":
             B = np.zeros((self.x.shape[1]))
         with warnings.catch_warnings(record=True) as w:
-            # Vanilla gradient descent (or batch gradient descent)
-            if not stochastic:
+            #Coordinate descent : attention, used only for linear regression        
+            if self.lamdb!=None or self.alpha!=None:
+                self.alpha = self.alpha if self.alpha != None else 0
+                self.lamdb = self.lamdb if self.lamdb != None else 0
+                
+                for iteration in range(1,self.max_iteration+1):
+                     B_old=B.copy()
+                     for j in range(self.x.shape[1]):
+                                               
+                         pred_y=self.x@B
+                   
+                         gradient=(self.x[:,j].T)@(self.y-pred_y)
+
+                         B[j]=B[j]+self.learning_rate*gradient  #0.001 as learn rate
+                         if j==0:
+                             pass
+                         else:
+                            B[j]=np.sign(B[j])*max(np.abs(B[j])-self.lamdb*self.alpha,0)/(1 + (self.lamdb * (1 - self.alpha))); 
+                        
+                         
+                         
+                     self.change  = np.sum((B_old - B)**2)  
+                     self.optimiser_verify_condition(
+                            iteration, self.max_iteration
+                        )
+                        
+                     if self.stop_loop:
+                            break
+                
+            # Gradient descent/newton Raphson (or batch gradient descent)
+            elif not stochastic:
                 local_max_iter = self.max_iteration
                 ft=True
                 for i in range(1, self.max_iteration + 1):
@@ -363,7 +398,8 @@ class GradientDescent:
                             break
                     if self.stop_loop:
                         break
-
+           
+            
             # if overflow  is present in warnings (vexploding effect of gradient descent due to multicollinearity, non normalised data, learning rate)
 
         for warning in w:
@@ -464,7 +500,8 @@ class BaseEstimator:
         return x
 
     def fit_base(
-        self, x: np.ndarray, y: np.ndarray, methodic: Literal["linear", "logistic"]
+        self, x: np.ndarray, y: np.ndarray, methodic: Literal["linear", "logistic"],
+        alpha: float=None, lambd: float=None
     ) -> np.ndarray:
         """
         The central function that calculates estimator of  Regression based on Gradient descent algorithm (or OLS)
@@ -498,8 +535,11 @@ class BaseEstimator:
             x,
             y,
             self.print_message,
+            alpha,
+            lambd
         )
         result_param = alg.optimiser_algorithm_classic()
+        
         if methodic=="logistic":
            if y.ndim==1: 
                nb_classes_1=1
@@ -513,7 +553,12 @@ class BaseEstimator:
             self.y = y
 
         return result_param
-
+    
+    
+    
+    
+    
+    
     def predict_linear(
         self, x: np.ndarray, param_if_not_kept: np.ndarray = None
     ) -> np.ndarray:
