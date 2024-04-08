@@ -121,8 +121,8 @@ class LogisticRegression(BaseEstimator):
 
         """
         erh.check_arguments_data((x, np.ndarray), (y, np.ndarray))
-
-        self.nb_unique_classes = sorted(np.unique(y))
+        if self.need_to_store_results:
+            self.nb_unique_classes = sorted(np.unique(y))
 
         y = self.transform_y_vector_to_matrix(y) if len(np.unique(y)) > 2 else y
 
@@ -435,6 +435,7 @@ class LogisticRegression(BaseEstimator):
                 classes_modeled = self.nb_unique_classes[
                     0 : len(self.nb_unique_classes) - 1
                 ]
+             
             else:
                 classes_modeled = [1]
 
@@ -454,7 +455,7 @@ class LogisticRegression(BaseEstimator):
                         )
                     )
             ordered_columns_names = col_names
-           
+        
         df = pd.DataFrame(
             result, index=ordered_columns_names, columns=result_column_names
         )

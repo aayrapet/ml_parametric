@@ -4,6 +4,7 @@ Linear Regression
 
 # Author: Artur Ayrapetyan
 
+from scipy.stats import chi2
 import pandas as pd
 import _err_handl as erh
 import numpy as np
@@ -144,6 +145,15 @@ class LinearRegression(BaseEstimator):
         pred = super().predict_linear(x, param_if_not_kept)
 
         return pred
+    
+    @staticmethod
+    def __r2(y,y_pred):
+        SCT=np.var(y)
+        SCR=np.sum((y-y_pred)**2,axis=0)
+        SCE=SCT-SCR
+        R2=SCE/SCT
+        return R2
+        
 
     def get_inference(self, biased: bool = True,only_IC: bool =False,param_if_not_kept: np.ndarray = None,y_if_not_kept : np.ndarray=None,
                       x_if_not_kept: np.ndarray=None) -> pd.DataFrame:
@@ -209,7 +219,8 @@ class LinearRegression(BaseEstimator):
         
         erh.check_arguments_data((biased, bool),(only_IC,bool))
         # better to pass predictions to attributes
-        SCR = np.sum((y - (x @ parameter)) ** 2, axis=0)
+        residuals=(y - (x @ parameter))
+        SCR = np.sum(residuals ** 2, axis=0)
      
         N = x.shape[0]
         p = x.shape[1]
@@ -232,6 +243,7 @@ class LinearRegression(BaseEstimator):
         if only_IC:
             return criteria
         # calculate variance covariance matrix and p values of parameters
+        
         vcov_matrix = variance * np.linalg.inv(x.T @ x)
         
         std_params = np.sqrt(np.diagonal(vcov_matrix))
@@ -244,6 +256,31 @@ class LinearRegression(BaseEstimator):
             np.column_stack((self.params, std_params, t_value, np.round(p_value, 4))),
             columns=["params", "std", "t value", "p value"],
         )
+        # #BP TEST
+        # self.need_to_store_results=False
+        # res2=residuals**2
+        # if self.add_intercept:
+        #     x=x[:,1:]
+        # paramsBP=self.fit(x,res2)
+        # self.need_to_store_results=True
+        # res2_pred_BP=super().add_intercept_f(x)@paramsBP
+        # R2=self.__r2(res2,res2_pred_BP)
+        
+        # value=R2*N
+        
+        # p_value = 1 - chi2.cdf(value, p)
+        # critical_value=chi2.ppf(1-.05, df=p)
+        # bptest={}
+        # bptest["value"]=value
+        # bptest["critical_value 5%"]=critical_value
+        # bptest["p_value 5%"]=p_value
+        # self.bptest=bptest
+        
+        
+        
+        
+        
+        
         
         
         if self.need_to_store_results:

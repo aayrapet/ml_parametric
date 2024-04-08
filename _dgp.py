@@ -210,3 +210,31 @@ def gen(type=1,regression: Literal["linear","logistic"]="linear"):
                p_true = sigmoid(y_lin)
                y = np.random.binomial(1, p_true, size=500)
     return x, y
+
+#modify this function and document more
+def gen_logistic_multiclass(n_classes=4):
+    
+    n_samples = 600
+    n_features = 5
+   
+    
+    X = np.random.randn(n_samples, n_features) 
+    
+    
+    true_coefficients = np.random.uniform(-1, 1, size=(n_features , n_classes))  
+    probabilities = np.exp(np.dot(X, true_coefficients))
+    probabilities /= np.sum(probabilities, axis=1, keepdims=True)  
+    y = np.array([np.random.choice(n_classes, p=prob) for prob in probabilities])  
+    var_covar = np.eye(45)
+
+        
+    mean = np.zeros((1, var_covar.shape[1]))
+
+       
+    # Generate random normal variables
+    x_false = np.random.multivariate_normal(mean.flatten(), var_covar, n_samples)
+    X=np.column_stack((X,x_false))
+    return X,y
+    
+    
+# Create DataFrame
