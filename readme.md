@@ -7,13 +7,14 @@ In this project, the aim is to develop parametric models using only math and Num
 
 ## Modules
 
-- **base**: Contains the `GradientDescent` optimizer, which includes classic Gradient Descent for Generalized Linear Models. It also has extensions such as stochastic gradient descent and Newton-Raphson. Additionally, this module stores `BaseEstimator`, which serves as the base estimator for GLM, such as Linear Regression and Logistic Regression.
+- **base**: Contains the `GradientDescent` optimizer, which includes classic Gradient Descent for Generalized Linear Models. It also has extensions such as stochastic gradient descent, Newton-Raphson and coordinate descent for L1,L2 and L3 regularisations. Additionally, this module stores `BaseEstimator`, which serves as the base estimator for GLM, such as Linear Regression and Logistic Regression.
 
 - **linear**: Stores the `LinearRegression` model.  
 
 - **logistic**: Stores the `LogisticRegression` model:
-  - Softmax function (generalisation of sigmoid function)
-  - One vs Rest algorithm
+  - Binary classification 
+  - Multiclass classification
+    Additionnaly, inference statistics are made on both of them using inverse of block Hessian matrix
 
 - **autoselect**: Stores the `Autoselection` of variables class. It selects variables using information Criteria defined by user. It has three options: backward, forward and stepwise regressions
 
