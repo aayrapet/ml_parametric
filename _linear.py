@@ -121,13 +121,15 @@ class LinearRegression(BaseEstimator):
         erh.check_arguments_data((x, np.ndarray), (y, np.ndarray))
         
         result_param_regul = super().fit_base(x, y, "linear",alpha,lambd)
+        final_ols_param=np.zeros(result_param_regul.shape[0])
         index_non_zero=np.nonzero(result_param_regul)
         
         if for_inference_lasso_params:
             self.need_to_store_results=False
         result_param=super().fit_base(x, y, "linear")
         if for_inference_lasso_params ==False:
-            self.params=result_param[index_non_zero]
+            final_ols_param[index_non_zero]=result_param[index_non_zero]
+            self.params=final_ols_param
         elif for_inference_lasso_params:
             self.need_to_store_results=True
             
@@ -136,7 +138,7 @@ class LinearRegression(BaseEstimator):
         #return both vectors -> why? used for model comparison, Lasso selects variables 
         # then on these variables we run Linear regression and get Information criteria
         #and other statistics
-        return result_param[index_non_zero],result_param_regul
+        return final_ols_param,result_param_regul
 
 
     def predict(
