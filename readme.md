@@ -14,6 +14,7 @@ In this project, the aim is to develop parametric models using only math and Num
 - **logistic**: Stores the `LogisticRegression` model:
   - Binary classification 
   - Multiclass classification
+    
     Additionnaly, inference statistics are made on both of them using inverse of block Hessian matrix
 
 - **autoselect**: Stores the `Autoselection` of variables class. It selects variables using information Criteria defined by user. It has three options: backward, forward and stepwise regressions
